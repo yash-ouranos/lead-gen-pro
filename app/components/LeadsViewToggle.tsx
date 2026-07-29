@@ -97,6 +97,17 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
                     </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 ml-auto justify-end">
+                    <div className="relative shrink-0">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                        <input 
+                            type="text" 
+                            placeholder="Search leads..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-9 pr-4 py-1.5 border border-border rounded text-sm bg-background w-full md:w-[180px] lg:w-[220px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        />
+                    </div>
+
                     <select
                         value={selectedActiveStatus}
                         onChange={(e) => setSelectedActiveStatus(e.target.value)}
@@ -118,17 +129,6 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
                             <option key={s} value={s}>{formatStatus(s)}</option>
                         ))}
                     </select>
-
-                    <div className="relative shrink-0">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <input 
-                            type="text" 
-                            placeholder="Search leads..." 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-4 py-1.5 border border-border rounded text-sm bg-background w-full md:w-[180px] lg:w-[220px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                        />
-                    </div>
                     {variant === 'leads' && (
                         <>
                             <button className="flex items-center gap-2 border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors rounded bg-background text-foreground">
