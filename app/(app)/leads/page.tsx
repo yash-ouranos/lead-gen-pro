@@ -39,7 +39,7 @@ export default async function LeadsPage() {
  });
 
  return (
- <div className="w-full space-y-6">
+ <div className="w-full h-full flex flex-col">
   <LeadsViewToggle leads={leads} />
  </div>
  );

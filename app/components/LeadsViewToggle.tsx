@@ -100,16 +100,16 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
                             placeholder="Search leads..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-4 py-1.5 border border-border rounded text-sm bg-background w-full md:w-[180px] lg:w-[220px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            className="pl-9 pr-4 py-2 border border-border rounded-md bg-background w-full md:w-[180px] lg:w-[220px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                         />
                     </div>
 
                     {variant === 'leads' && (
                         <>
-                            <button className="flex items-center gap-2 border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors rounded bg-background text-foreground">
+                            <button className="flex items-center gap-2 border border-border px-4 py-2 font-medium hover:bg-muted transition-colors rounded-md bg-background text-foreground">
                                 <Upload size={16} /> Import
                             </button>
-                            <button className="flex items-center gap-2 border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors rounded bg-background text-foreground">
+                            <button className="flex items-center gap-2 border border-border px-4 py-2 font-medium hover:bg-muted transition-colors rounded-md bg-background text-foreground">
                                 <User size={16} /> Assign
                             </button>
                         </>
@@ -122,7 +122,7 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
                     />
                     <Link 
                         href="/leads/new"
-                        className="bg-primary text-white px-4 py-2 flex items-center gap-2 font-medium hover:bg-primary/90 transition"
+                        className="bg-primary text-white px-4 py-2 flex items-center gap-2 font-medium hover:bg-primary/90 transition rounded-md"
                     >
                         <Add className="w-4 h-4"/> Add Lead
                     </Link>

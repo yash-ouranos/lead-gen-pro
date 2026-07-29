@@ -35,6 +35,14 @@ export default function HeaderTitle() {
   } else if (pathname === "/templates") {
     title = "Templates";
     subtitle = "Manage your email templates.";
+  } else if (pathname === "/templates/new") {
+    title = "New Template";
+    subtitle = "Create a new email template for your outreach campaigns.";
+    showBackButton = true;
+  } else if (pathname.startsWith("/templates/") && pathname.endsWith("/edit")) {
+    title = "Edit Template";
+    subtitle = "Update your existing email template.";
+    showBackButton = true;
   } else if (pathname === "/staffs") {
     title = "Staffs";
     subtitle = "Manage your team members and staff.";

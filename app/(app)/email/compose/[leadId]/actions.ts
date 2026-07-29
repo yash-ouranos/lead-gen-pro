@@ -40,8 +40,8 @@ export async function sendEmail(leadId: string, subject: string, body: string) {
 
  const trackingPixelUrl =`${process.env.NEXTAUTH_URL ||'http://localhost:3000'}/api/track/${emailLog.id}.png`;
  
- // Convert newlines to <br> for HTML email, and append tracking pixel
- const htmlBody = body.replace(/\n/g,"<br>") +`<br><br><img src="${trackingPixelUrl}"width="1"height="1"alt=""/>`;
+ // We already have HTML from CKEditor, just append tracking pixel
+ const htmlBody = body +`<br><br><img src="${trackingPixelUrl}"width="1"height="1"alt=""/>`;
 
  // Construct raw email RFC 2822 formatted string
  const messageParts = [

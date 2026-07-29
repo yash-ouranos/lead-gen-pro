@@ -45,7 +45,7 @@ export default function AdvancedFilterPopover({
         <div className="relative">
             <button 
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={cn("bg-muted text-foreground border border-border px-4 py-2 flex items-center gap-2 font-medium transition", isFilterOpen ? "bg-muted/80 shadow-inner" : "hover:bg-muted/80")}
+                className={cn("bg-muted text-foreground border border-border px-4 py-2 flex items-center gap-2 font-medium transition rounded-md", isFilterOpen ? "bg-muted/80 shadow-inner" : "hover:bg-muted/80")}
             >
                 <Filter className="w-4 h-4"/> Filter {appliedFilterCount > 0 && <span className="bg-primary text-white text-xs px-1.5 rounded-full">{appliedFilterCount}</span>}
             </button>

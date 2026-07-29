@@ -127,18 +127,20 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
 
  return (
  <div className="flex flex-col h-full justify-between w-full">
- <div className="overflow-x-auto">
+ <div className="overflow-x-auto flex-1">
  <table className="w-full text-left text-sm text-muted-foreground border-collapse">
  <thead className="bg-[#e0e0e0] border-b border-border text-[13px] font-semibold text-foreground">
                 <tr>
-                  <th className="px-6 py-4 w-[50px] text-center">
-                    <input
-                      type="checkbox"
-                      checked={localLeads.length > 0 && selectedLeadIds.length === localLeads.length}
-                      onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
-                    />
-                  </th>
+                  {variant === 'leads' && (
+                    <th className="px-6 py-4 w-[50px] text-center">
+                      <input
+                        type="checkbox"
+                        checked={localLeads.length > 0 && selectedLeadIds.length === localLeads.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-4 w-[60px] text-center font-semibold text-xs tracking-wider uppercase">ID</th>
                   <th className="px-6 py-4 font-semibold text-xs tracking-wider uppercase">LEAD NAME</th>
                   <th className="px-6 py-4 font-semibold text-xs tracking-wider uppercase">COMPANY NAME</th>
@@ -174,16 +176,21 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
               {paginatedLeads.map((lead, index) => (
                 <tr key={lead.id} className="bg-card hover:bg-muted/50 transition-colors hover: border-b border-border last:border-0 cursor-pointer group relative" onClick={() => onLeadClick?.(lead)}
                 >
-                  <td className="px-6 py-4 text-center relative" onClick={(e) => e.stopPropagation()}>
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity"/>
-                    <input
-                      type="checkbox"
-                      checked={selectedLeadIds.includes(lead.id)}
-                      onChange={(e) => toggleSelectLead(lead.id, e as any)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
-                    />
-                  </td>
-                  <td className="px-4 py-4 text-center font-medium text-foreground text-sm">
+                  {variant === 'leads' && (
+                    <td className="px-6 py-4 text-center relative" onClick={(e) => e.stopPropagation()}>
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity"/>
+                      <input
+                        type="checkbox"
+                        checked={selectedLeadIds.includes(lead.id)}
+                        onChange={(e) => toggleSelectLead(lead.id, e as any)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer accent-primary"
+                      />
+                    </td>
+                  )}
+                  <td className={`px-4 py-4 text-center font-medium text-foreground text-sm ${variant !== 'leads' ? 'relative' : ''}`}>
+                    {variant !== 'leads' && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity"/>
+                    )}
                     {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
                   </td>
                   <td className="px-6 py-4">

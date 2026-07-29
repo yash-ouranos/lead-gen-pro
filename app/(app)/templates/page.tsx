@@ -1,7 +1,7 @@
 import { getServerSession } from"next-auth";
 import { authOptions } from"@/lib/auth";
 import { prisma } from"@/lib/prisma";
-import TemplateManager from"./TemplateManager";
+import TemplateList from "@/app/components/TemplateList";
 import { redirect } from"next/navigation";
 
 export default async function TemplatesPage() {
@@ -19,7 +19,7 @@ export default async function TemplatesPage() {
   return (
     <div className="w-full h-full flex flex-col bg-card animate-in fade-in duration-500 overflow-y-auto">
       <div className="flex-1 p-6 md:p-8">
-        <TemplateManager initialTemplates={templates} />
+        <TemplateList templates={templates} />
       </div>
     </div>
   );

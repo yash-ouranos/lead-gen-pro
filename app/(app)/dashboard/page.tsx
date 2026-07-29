@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   const activeCampaigns = campaigns.filter(c => c.status !== "COMPLETED" && c.status !== "FAILED");
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full h-full flex flex-col space-y-6 animate-in fade-in duration-500 pb-6">
       <AutoRefresh isActive={activeCampaigns.length > 0} />
 
 
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
         <h2 className="text-xl font-bold tracking-tight text-foreground">Leads</h2>
       </div>
 
-      <div className="bg-card overflow-hidden">
+      <div className="bg-card flex-1 flex flex-col overflow-hidden">
         <LeadsViewToggle leads={leads} variant="dashboard" />
       </div>
     </div>

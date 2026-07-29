@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { sendEmail } from "./actions";
 import type { EmailTemplate } from "@prisma/client";
+import dynamic from "next/dynamic";
+
+const CKEditor = dynamic(() => import("@/app/components/CKEditorWrapper"), { ssr: false });
 
 interface ComposeFormProps {
   leadId: string;
@@ -128,16 +131,13 @@ export default function ComposeForm({ leadId, leadData, templates, initialSubjec
 
         <div>
           <label htmlFor="body" className="block text-sm font-medium text-muted-foreground mb-1">Message *</label>
-          <textarea
-            id="body"
-            name="body"
-            rows={12}
+          <CKEditor
             value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className={`${getInputClasses("body")} resize-y font-sans`}
+            onChange={setBody}
+            placeholder="Type your message here..."
           />
           {fieldErrors.body && <p className="text-red-500 text-xs mt-1">{fieldErrors.body}</p>}
-          <p className="mt-1 text-xs text-gray-400">Newlines will be converted to HTML line breaks. The tracking pixel is automatically appended.</p>
+          <p className="mt-1 text-xs text-gray-400">The tracking pixel is automatically appended.</p>
         </div>
 
         <div className="pt-4 flex justify-end gap-3">
