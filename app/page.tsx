@@ -32,6 +32,14 @@ export default function LandingPage() {
     { name: "Agency", price: "$199", desc: "Uncapped potential for large operations.", features: ["Unlimited leads", "Custom AI parameters", "Unlimited emails", "24/7 phone support", "White-label reports"] }
   ]
 
+  const scrollTo = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-[#030014] text-white selection:bg-indigo-500/30 font-sans overflow-x-hidden">
       {/* Ambient Background */}
@@ -50,10 +58,10 @@ export default function LandingPage() {
           <span className="font-bold text-xl text-white">LeadGen<span className="text-indigo-400">Pro</span></span>
         </Link>
         <nav className="ml-auto flex gap-6 items-center">
-          <a className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="#features">
+          <a className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer" onClick={(e) => scrollTo(e, 'features')}>
             Features
           </a>
-          <a className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="#pricing">
+          <a className="text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer" onClick={(e) => scrollTo(e, 'pricing')}>
             Pricing
           </a>
           <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors hidden sm:block" href="/login">
@@ -91,7 +99,7 @@ export default function LandingPage() {
                     Start for free
                   </Button>
                 </Link>
-                <a href="#features">
+                <a className="cursor-pointer" onClick={(e) => scrollTo(e, 'features')}>
                   <Button variant="outline" size="lg" className="h-14 px-8 rounded-full border-white/20 hover:bg-white/10 text-white hover:text-white text-lg bg-transparent backdrop-blur-sm">
                     View features
                   </Button>
