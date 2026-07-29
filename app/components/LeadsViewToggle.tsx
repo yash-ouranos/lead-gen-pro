@@ -11,18 +11,6 @@ import Link from "next/link";
 import { useAdvancedFilter } from "@/app/hooks/useAdvancedFilter";
 import AdvancedFilterPopover from "./AdvancedFilterPopover";
 
-const COLUMNS = [
-    { value: "name", label: "Name" },
-    { value: "companyName", label: "Company" },
-    { value: "jobTitle", label: "Title" },
-    { value: "email", label: "Email" },
-    { value: "phone", label: "Phone" },
-    { value: "status", label: "Status" },
-    { value: "methodOfContact", label: "Method of Contact" },
-    { value: "leadSource", label: "Lead Source" },
-    { value: "aiScore", label: "AI Score" },
-    { value: "activeStatus", label: "Lead State" }
-];
 
 
 export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: any[], variant?: "dashboard" | "leads" }) {
@@ -31,8 +19,6 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
     const [selectedLead, setSelectedLead] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
-    const [selectedActiveStatus, setSelectedActiveStatus] = useState<string>("all");
-    const [selectedLeadStatus, setSelectedLeadStatus] = useState<string>("all");
     const [leadStatuses, setLeadStatuses] = useState<any[]>([]);
 
     useEffect(() => {
@@ -47,9 +33,6 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
     const uniqueActiveStatuses = ["Active", "Inactive", "Deleted"];
 
     const searchedLeads = leads.filter(lead => {
-        if (selectedActiveStatus !== "all" && (lead.activeStatus || "Active") !== selectedActiveStatus) return false;
-        if (selectedLeadStatus !== "all" && lead.status !== selectedLeadStatus) return false;
-        
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
         const searchableString = [
@@ -70,6 +53,19 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
     });
 
     const { filteredData: filteredLeads, filters, setFilters, appliedFilterCount } = useAdvancedFilter(searchedLeads);
+
+    const dynamicColumns = [
+        { value: "name", label: "Name" },
+        { value: "companyName", label: "Company" },
+        { value: "jobTitle", label: "Title" },
+        { value: "email", label: "Email" },
+        { value: "phone", label: "Phone" },
+        { value: "status", label: "Status", options: uniqueLeadStatuses.map(s => ({ label: formatStatus(s), value: s })) },
+        { value: "methodOfContact", label: "Method of Contact" },
+        { value: "leadSource", label: "Lead Source" },
+        { value: "aiScore", label: "AI Score" },
+        { value: "activeStatus", label: "Lead State", options: uniqueActiveStatuses.map(s => ({ label: s, value: s })) }
+    ];
 
     return (
         <div className="flex flex-col h-full animate-in fade-in duration-300">
@@ -108,27 +104,6 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
                         />
                     </div>
 
-                    <select
-                        value={selectedActiveStatus}
-                        onChange={(e) => setSelectedActiveStatus(e.target.value)}
-                        className="bg-background border border-border text-sm font-medium rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[100px] text-foreground"
-                    >
-                        <option value="all">All Status</option>
-                        {uniqueActiveStatuses.map(s => (
-                            <option key={s} value={s}>{s}</option>
-                        ))}
-                    </select>
-
-                    <select
-                        value={selectedLeadStatus}
-                        onChange={(e) => setSelectedLeadStatus(e.target.value)}
-                        className="bg-background border border-border text-sm font-medium rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[140px] text-foreground"
-                    >
-                        <option value="all">All Lead Status</option>
-                        {uniqueLeadStatuses.map(s => (
-                            <option key={s} value={s}>{formatStatus(s)}</option>
-                        ))}
-                    </select>
                     {variant === 'leads' && (
                         <>
                             <button className="flex items-center gap-2 border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors rounded bg-background text-foreground">
@@ -140,7 +115,7 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
                         </>
                     )}
                     <AdvancedFilterPopover 
-                        columns={COLUMNS}
+                        columns={dynamicColumns}
                         filters={filters}
                         setFilters={setFilters}
                         appliedFilterCount={appliedFilterCount}

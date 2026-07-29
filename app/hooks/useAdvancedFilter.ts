@@ -10,6 +10,7 @@ export type FilterRule = {
 export type ColumnDef = {
     value: string;
     label: string;
+    options?: { label: string; value: string }[];
 };
 
 export function useAdvancedFilter<T extends Record<string, any>>(data: T[]) {

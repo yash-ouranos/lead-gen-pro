@@ -53,7 +53,9 @@ export default function AdvancedFilterPopover({
             {isFilterOpen && (
                 <div className="absolute top-full right-0 mt-2 bg-card border border-border shadow-lg rounded-md p-4 w-[500px] z-50 animate-in fade-in slide-in-from-top-2">
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                        {filters.map(f => (
+                        {filters.map(f => {
+                            const selectedColumn = columns.find(c => c.value === f.column);
+                            return (
                             <div key={f.id} className="flex items-center gap-2">
                                 <select 
                                     value={f.column} 
@@ -71,13 +73,28 @@ export default function AdvancedFilterPopover({
                                     <option value="" disabled>Select</option>
                                     {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                                 </select>
-                                <input 
-                                    type="text" 
-                                    value={f.value}
-                                    onChange={e => updateFilter(f.id, "value", e.target.value)}
-                                    placeholder="write here..."
-                                    className="flex-1 min-w-0 text-sm bg-background border border-border rounded px-2 py-1.5 focus:outline-none focus:border-primary"
-                                />
+                                
+                                {selectedColumn?.options ? (
+                                    <select 
+                                        value={f.value}
+                                        onChange={e => updateFilter(f.id, "value", e.target.value)}
+                                        className="flex-1 min-w-0 text-sm bg-background border border-border rounded px-2 py-1.5 focus:outline-none focus:border-primary"
+                                    >
+                                        <option value="" disabled>Select option</option>
+                                        {selectedColumn.options.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <input 
+                                        type="text" 
+                                        value={f.value}
+                                        onChange={e => updateFilter(f.id, "value", e.target.value)}
+                                        placeholder="write here..."
+                                        className="flex-1 min-w-0 text-sm bg-background border border-border rounded px-2 py-1.5 focus:outline-none focus:border-primary"
+                                    />
+                                )}
+                                
                                 {filters.length > 1 ? (
                                     <button onClick={() => removeFilter(f.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-900 shrink-0">
                                         <TrashCan size={16} />
@@ -86,7 +103,7 @@ export default function AdvancedFilterPopover({
                                     <div className="w-[30px] shrink-0" />
                                 )}
                             </div>
-                        ))}
+                        )})}
                     </div>
                     
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
