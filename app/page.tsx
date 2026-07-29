@@ -50,12 +50,12 @@ export default function LandingPage() {
           <span className="font-bold text-xl text-white">LeadGen<span className="text-indigo-400">Pro</span></span>
         </Link>
         <nav className="ml-auto flex gap-6 items-center">
-          <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="/#features">
+          <a className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="#features">
             Features
-          </Link>
-          <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="/#pricing">
+          </a>
+          <a className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="#pricing">
             Pricing
-          </Link>
+          </a>
           <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors hidden sm:block" href="/login">
             Login
           </Link>
@@ -91,11 +91,11 @@ export default function LandingPage() {
                     Start for free
                   </Button>
                 </Link>
-                <Link href="/#features">
+                <a href="#features">
                   <Button variant="outline" size="lg" className="h-14 px-8 rounded-full border-white/20 hover:bg-white/10 text-white text-lg bg-transparent backdrop-blur-sm">
                     View features
                   </Button>
-                </Link>
+                </a>
               </div>
             </motion.div>
           </div>
