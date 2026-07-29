@@ -28,7 +28,7 @@ export default function RootLayout({
  children: React.ReactNode;
 }>) {
  return (
- <html lang="en">
+ <html lang="en" className="scroll-smooth">
  <body className={`${ibmPlexSans.className} ${ibmPlexSans.variable} ${ibmPlexMono.variable}`}>
  <Providers>
  {children}
