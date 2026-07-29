@@ -1,16 +1,18 @@
 import { UserDropdown } from"./UserDropdown";
 import { getServerSession } from"next-auth";
 import { authOptions } from"@/lib/auth";
-import { Search, Menu, Notification } from"@carbon/icons-react";
+import { Notification } from "@carbon/icons-react";
 import HeaderTitle from "./HeaderTitle";
+import SidebarToggleButton from "./SidebarToggleButton";
 
 export default async function Header() {
   const session = await getServerSession(authOptions);
 
   return (
     <header className="flex h-14 items-center gap-4 border-b border-border bg-background/80 backdrop-blur-md px-6 shrink-0 z-10 sticky top-0 transition-all duration-300">
+      <SidebarToggleButton />
       <button className="md:hidden p-2 -ml-2 hover:bg-accent text-muted-foreground transition-colors">
-        <Menu className="h-5 w-5"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-5 w-5"><path strokeWidth="2" strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
       </button>
       
       <HeaderTitle />
