@@ -6,7 +6,7 @@ import LeadTable from "./LeadTable";
 import KanbanBoard from "./KanbanBoard";
 import LeadDetailsPanel from "./LeadDetailsPanel";
 import { List, Column, Filter, TrashCan, Add, User, Upload, Search } from "@carbon/icons-react";
-import { cn } from "@/lib/utils";
+import { cn, formatStatus, sortStatuses } from "@/lib/utils";
 import Link from "next/link";
 import { useAdvancedFilter } from "@/app/hooks/useAdvancedFilter";
 import AdvancedFilterPopover from "./AdvancedFilterPopover";
@@ -31,7 +31,25 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
     const [selectedLead, setSelectedLead] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const [selectedActiveStatus, setSelectedActiveStatus] = useState<string>("all");
+    const [selectedLeadStatus, setSelectedLeadStatus] = useState<string>("all");
+    const [leadStatuses, setLeadStatuses] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetch("/api/lead-status").then(r => r.json()).then(setLeadStatuses);
+    }, []);
+
+    const uniqueLeadStatuses = sortStatuses(Array.from(new Set([
+        ...leads.map(l => l.status),
+        ...leadStatuses.filter(s => s.status === 'Active').map(s => s.name)
+    ])).filter(Boolean) as string[]);
+
+    const uniqueActiveStatuses = Array.from(new Set(leads.map(l => l.activeStatus || "Active"))).filter(Boolean) as string[];
+
     const searchedLeads = leads.filter(lead => {
+        if (selectedActiveStatus !== "all" && (lead.activeStatus || "Active") !== selectedActiveStatus) return false;
+        if (selectedLeadStatus !== "all" && lead.status !== selectedLeadStatus) return false;
+        
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
         const searchableString = [
@@ -78,15 +96,37 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
                         <Column size={18} />
                     </button>
                 </div>
-                <div className="flex items-center gap-3 ml-auto">
-                    <div className="relative">
+                <div className="flex flex-wrap items-center gap-3 ml-auto justify-end">
+                    <select
+                        value={selectedActiveStatus}
+                        onChange={(e) => setSelectedActiveStatus(e.target.value)}
+                        className="bg-background border border-border text-sm font-medium rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[100px] text-foreground"
+                    >
+                        <option value="all">All Status</option>
+                        {uniqueActiveStatuses.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={selectedLeadStatus}
+                        onChange={(e) => setSelectedLeadStatus(e.target.value)}
+                        className="bg-background border border-border text-sm font-medium rounded px-3 py-1.5 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[140px] text-foreground"
+                    >
+                        <option value="all">All Lead Status</option>
+                        {uniqueLeadStatuses.map(s => (
+                            <option key={s} value={s}>{formatStatus(s)}</option>
+                        ))}
+                    </select>
+
+                    <div className="relative shrink-0">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                         <input 
                             type="text" 
                             placeholder="Search leads..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-4 py-1.5 border border-border rounded text-sm bg-background w-full md:w-[250px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                            className="pl-9 pr-4 py-1.5 border border-border rounded text-sm bg-background w-full md:w-[180px] lg:w-[220px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                         />
                     </div>
                     {variant === 'leads' && (
