@@ -52,9 +52,11 @@ export default function Sidebar() {
   return (
     <aside className="w-64 flex-col border-r border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden md:flex h-full min-h-screen sticky top-0 transition-all duration-300">
       <div className="h-14 flex items-center px-6 border-b border-border shrink-0">
-        <Link href="/dashboard" className="font-bold text-xl text-primary flex items-center gap-2 group">
-          <div className="w-7 h-7 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground flex items-center justify-center text-sm shadow-sm group-hover:shadow-md transition-all group-hover:scale-105">L</div>
-          <span className="tracking-tight">LeadGen<span className="text-foreground">Pro</span></span>
+        <Link href="/dashboard" className="font-bold text-xl flex items-center gap-2 group">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:shadow-lg transition-all group-hover:scale-105 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-white"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" /></svg>
+          </div>
+          <span className="tracking-tight text-foreground">LeadGen<span className="text-indigo-600">Pro</span></span>
         </Link>
       </div>
       
