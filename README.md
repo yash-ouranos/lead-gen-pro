@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LeadGen Pro CRM
 
-## Getting Started
+A complete, AI-powered Lead Generation CRM built with Next.js 15, React 19, TailwindCSS, Prisma, and PostgreSQL.
 
-First, run the development server:
+## Features
+- **Lead Management**: Track and manage leads in a detailed table or Kanban board.
+- **AI Lead Scraping**: Automatically scrape leads from Google Maps based on niche and location.
+- **Email Outreach**: Compose and send emails directly from the CRM with open-tracking support.
+- **Dynamic Configuration**: Configure Lead Statuses, Method of Contact, Roles, Staffs, Promotions, and Referrals.
+- **Staff Assignment**: Multi-tenant user assignment and role-based permissions.
+- **Detailed History**: Track activity history and add manual notes to every lead.
+
+---
+
+## 🛠 Setup & Installation
+
+### 1. Prerequisites
+- Node.js 18.17 or later
+- PostgreSQL database
+
+### 2. Environment Variables
+Copy the `.env.example` file to create your environment configurations.
+
+For **Development**:
+```bash
+cp .env.example .env.local
+```
+
+For **Production**:
+```bash
+cp .env.example .env.production
+```
+
+**Required Variables**:
+- `DATABASE_URL`: Connection string for your PostgreSQL database.
+- `NEXTAUTH_SECRET`: A secure random string for signing JWT tokens (run `openssl rand -base64 32`).
+- `NEXTAUTH_URL`: The canonical URL of your site (e.g. `http://localhost:3000` or `https://yourdomain.com`).
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Create an OAuth app in the Google Cloud Console for User Authentication.
+
+### 3. Database Setup
+Initialize the database schema using Prisma:
+
+```bash
+npm install
+npx prisma generate
+npx prisma migrate dev --name init
+```
+*(In production, run `npx prisma migrate deploy` instead of `migrate dev`)*
+
+---
+
+## 🚀 Running the Application
+
+### Development Mode
+To run the local development server with hot-reloading:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Open [http://localhost:3000](http://localhost:3000) with your browser.
+
+### Production Mode
+To build and start the optimized production server:
+
+```bash
+# 1. Build the application
+npm run build
+
+# 2. Start the production server
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Technology Stack
+- **Framework**: Next.js (App Router)
+- **Database ORM**: Prisma
+- **Authentication**: NextAuth.js (Google OAuth)
+- **Styling**: Tailwind CSS & Radix UI
+- **Icons**: IBM Carbon Icons
