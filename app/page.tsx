@@ -42,7 +42,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgwem0yMCAyMGgyMHYyMEgyMHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMSIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] opacity-30" />
       </div>
 
-      <header className="px-6 lg:px-14 h-20 flex items-center border-b border-white/5 bg-white/5 backdrop-blur-xl sticky top-0 z-50">
+      <header className="fixed top-0 left-0 right-0 px-6 lg:px-14 h-20 flex items-center border-b border-white/5 bg-white/5 backdrop-blur-xl z-50">
         <Link className="flex items-center justify-center gap-2" href="/">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-white"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" /></svg>
@@ -65,7 +65,7 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      <main className="flex-1 relative z-10">
+      <main className="flex-1 relative z-10 pt-20">
         {/* Hero Section */}
         <section className="w-full py-24 md:py-32 lg:py-48 flex items-center justify-center relative">
           <div className="container px-4 md:px-6 mx-auto text-center">
