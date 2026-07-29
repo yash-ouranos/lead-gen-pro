@@ -29,7 +29,7 @@ export default async function LoginPage() {
         {/* Subtle grid pattern overlay */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgwem0yMCAyMGgyMHYyMEgyMHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] opacity-20 z-0" />
 
-        <div className="relative z-20 flex items-center text-xl font-bold tracking-tight">
+        <Link href="/" className="relative z-20 flex items-center text-xl font-bold tracking-tight hover:opacity-80 transition-opacity w-fit">
           <div className="w-8 h-8 mr-3 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -45,7 +45,7 @@ export default async function LoginPage() {
             </svg>
           </div>
           LeadGen<span className="text-indigo-400">Pro</span>
-        </div>
+        </Link>
 
         {/* Floating Glassmorphism Element */}
         <div className="relative z-20 m-auto w-full max-w-md">
