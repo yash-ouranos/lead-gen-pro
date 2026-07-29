@@ -120,19 +120,19 @@ export default function HeaderTitle() {
   if (!title) return <div className="flex-1 md:flex hidden" />;
 
   return (
-    <div className="flex-1 md:flex flex-col hidden px-3">
-      <div className="flex items-center gap-2">
-        {showBackButton && (
-          <button 
-            onClick={() => router.back()} 
-            className="p-1 -ml-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </button>
-        )}
+    <div className="flex-1 md:flex items-center gap-3 hidden px-3">
+      {showBackButton && (
+        <button 
+          onClick={() => router.back()} 
+          className="p-1.5 -ml-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
+      <div className="flex flex-col justify-center">
         <h1 className="text-xl font-bold text-foreground leading-none">{title}</h1>
+        {subtitle && <p className="text-xs text-muted-foreground mt-1.5">{subtitle}</p>}
       </div>
-      {subtitle && <p className={`text-xs text-muted-foreground mt-1 ${showBackButton ? "ml-8" : ""}`}>{subtitle}</p>}
     </div>
   );
 }
