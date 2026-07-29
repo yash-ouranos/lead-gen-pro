@@ -56,7 +56,7 @@ export default function Sidebar() {
 
   return (
     <aside className={`${isCollapsed ? 'w-[72px]' : 'w-64'} flex-col border-r border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden md:flex h-full min-h-screen sticky top-0 transition-all duration-300`}>
-      <div className={`h-14 flex items-center border-b border-border shrink-0 ${isCollapsed ? 'justify-center px-0' : 'px-6'}`}>
+      <div className={`h-16 flex items-center border-b border-border shrink-0 ${isCollapsed ? 'justify-center px-0' : 'px-6'}`}>
         <Link href="/dashboard" className="font-bold text-xl flex items-center gap-2 group" title={isCollapsed ? "LeadGenPro" : undefined}>
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:shadow-lg transition-all group-hover:scale-105 shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-white"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" /></svg>

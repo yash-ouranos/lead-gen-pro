@@ -120,7 +120,7 @@ export default function HeaderTitle() {
   if (!title) return <div className="flex-1 md:flex hidden" />;
 
   return (
-    <div className="flex-1 md:flex items-center gap-3 hidden px-3">
+    <div className="flex-1 md:flex items-center gap-4 hidden px-4">
       {showBackButton && (
         <button 
           onClick={() => router.back()} 
