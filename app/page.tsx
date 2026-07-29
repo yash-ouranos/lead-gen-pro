@@ -50,10 +50,10 @@ export default function LandingPage() {
           <span className="font-bold text-xl text-white">LeadGen<span className="text-indigo-400">Pro</span></span>
         </Link>
         <nav className="ml-auto flex gap-6 items-center">
-          <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="#features">
+          <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="/#features">
             Features
           </Link>
-          <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="#pricing">
+          <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors" href="/#pricing">
             Pricing
           </Link>
           <Link className="text-sm font-medium text-gray-300 hover:text-white transition-colors hidden sm:block" href="/login">
@@ -79,7 +79,7 @@ export default function LandingPage() {
                 <span className="flex h-2 w-2 rounded-full bg-indigo-400 mr-2 animate-pulse shadow-[0_0_10px_2px_rgba(129,140,248,0.5)]"></span>
                 LeadGenPro 2.0 is now live
               </div>
-              <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl max-w-5xl bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">
+              <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl max-w-5xl bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400 pb-2 sm:pb-4">
                 Automate your <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">lead generation</span> engine.
               </h1>
               <p className="mx-auto max-w-[700px] text-gray-400 md:text-xl/relaxed lg:text-2xl/relaxed">
@@ -91,7 +91,7 @@ export default function LandingPage() {
                     Start for free
                   </Button>
                 </Link>
-                <Link href="#features">
+                <Link href="/#features">
                   <Button variant="outline" size="lg" className="h-14 px-8 rounded-full border-white/20 hover:bg-white/10 text-white text-lg bg-transparent backdrop-blur-sm">
                     View features
                   </Button>
@@ -105,7 +105,7 @@ export default function LandingPage() {
         <section id="features" className="w-full py-24 bg-black/40 border-y border-white/5 relative">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-20">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">Everything you need to grow</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400 pb-2">Everything you need to grow</h2>
               <p className="max-w-[800px] text-gray-400 md:text-xl/relaxed">
                 We've built the ultimate tool for agencies, freelancers, and B2B businesses to scale their outreach.
               </p>
@@ -135,7 +135,7 @@ export default function LandingPage() {
         <section id="pricing" className="w-full py-24 relative">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-20">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400">Simple, transparent pricing</h2>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400 pb-2">Simple, transparent pricing</h2>
               <p className="max-w-[600px] text-gray-400 md:text-xl/relaxed">
                 Choose the perfect plan for your business needs. No hidden fees.
               </p>
