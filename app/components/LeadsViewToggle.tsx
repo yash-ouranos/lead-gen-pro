@@ -44,7 +44,7 @@ export default function LeadsViewToggle({ leads, variant = "leads" }: { leads: a
         ...leadStatuses.filter(s => s.status === 'Active').map(s => s.name)
     ])).filter(Boolean) as string[]);
 
-    const uniqueActiveStatuses = Array.from(new Set(leads.map(l => l.activeStatus || "Active"))).filter(Boolean) as string[];
+    const uniqueActiveStatuses = ["Active", "Inactive", "Deleted"];
 
     const searchedLeads = leads.filter(lead => {
         if (selectedActiveStatus !== "all" && (lead.activeStatus || "Active") !== selectedActiveStatus) return false;
