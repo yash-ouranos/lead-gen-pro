@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url is loaded from prisma.config.ts
+}
+
+// NextAuth schema
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  // User Settings
+  apifyApiKey     String?
+  hunterApiKey    String?
+  apolloApiKey    String?
+  openaiApiKey    String?
+  anthropicApiKey String?
+  geminiApiKey    String?
+
+  // Relations
+  campaigns      Campaign[]
+  emailTemplates EmailTemplate[]
+  leads          Lead[]
+  promotions     Promotion[]
+  referrals      Referral[]
+  staffs         Staff[]    @relation("CreatedStaff")
+  staffProfile   Staff?     @relation("StaffAccount")
+  createdRoles     Role[]            @relation("CreatedRoles")
+  createdPermissions Permission[]    @relation("CreatedPermissions")
+  methodOfContacts MethodOfContact[]
+  leadStatuses     LeadStatus[]
+  leadActivities   LeadActivity[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// App specific models
+model Campaign {
+  id        String   @id @default(cuid())
+  userId    String
+  location  String
+  niche     String
+  status    String   @default("PENDING") // PENDING, SCRAPING, SCORING, COMPLETED, FAILED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads Lead[]
+}
+
+model Lead {
+  id         String  @id @default(cuid())
+  userId     String?
+  campaignId String?
+
+  // Lead Information
+  leadType                 String[]
+  preferredMethodOfContact String?
+  assignStaffId            String?
+  followUpDate             DateTime?
+
+  // Contact Info
+  name         String?
+  businessName String
+  email        String?
+  phone        String?
+  website      String?
+
+  // Address Details
+  streetNo String?
+  city     String?
+  state    String?
+  country  String?
+  pinCode  String?
+  products String[]
+  services String[]
+
+  // Other existing fields
+  address     String?
+  rating      Float?
+  reviewCount Int?
+  claimed     Boolean?
+  socialLinks Json? // Store array of links
+  mapUrl      String? // Google Maps link
+
+  remarks String? @db.Text
+
+  aiScore      Int? // 0-100
+  aiAnalysis   String?  @db.Text
+  status       String   @default("NEW") // NEW, CONTACTED, ENGAGED, MEETING_BOOKED, CLOSED_WON, CLOSED_LOST, OPEN, HOLD
+  activeStatus String   @default("Active") // Active, Inactive, Deleted
+  createdAt    DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaign   Campaign?      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  staff      Staff?         @relation(fields: [assignStaffId], references: [id], onDelete: SetNull)
+  promotions Promotion[]
+  referralId String?
+  referral   Referral?      @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  emailLogs  EmailLog[]
+  activities LeadActivity[]
+}
+
+model LeadActivity {
+  id          String   @id @default(cuid())
+  leadId      String
+  type        String // CREATED, STATUS_CHANGE, EMAIL_SENT, EMAIL_OPENED, MEETING_BOOKED
+  description String   @db.Text
+  createdAt   DateTime @default(now())
+  userId      String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model EmailLog {
+  id        String    @id @default(cuid())
+  leadId    String
+  subject   String
+  body      String    @db.Text
+  sentAt    DateTime  @default(now())
+  openedAt  DateTime?
+  openCount Int       @default(0)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  subject   String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Promotion {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals Referral[]
+  leads     Lead[]
+}
+
+model Referral {
+  id          String   @id @default(cuid())
+  userId      String
+  promotionId String
+  name        String
+  email       String?
+  phone       String?
+  status      String   @default("Active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promotion Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  leads     Lead[]
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  userId    String
+  accountId String?  @unique
+  roleId    String?
+  name      String
+  email     String?
+  phone     String?
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User   @relation("CreatedStaff", fields: [userId], references: [id], onDelete: Cascade)
+  account User?  @relation("StaffAccount", fields: [accountId], references: [id], onDelete: SetNull)
+  role    Role?  @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  leads   Lead[]
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  permissions String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation("CreatedRoles", fields: [userId], references: [id], onDelete: Cascade)
+  staffs      Staff[]
+}
+
+model Permission {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  value     String
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("CreatedPermissions", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MethodOfContact {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LeadStatus {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

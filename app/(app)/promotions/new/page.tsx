@@ -1,0 +1,11 @@
+import PromotionForm from "../PromotionForm";
+
+export default function NewPromotionPage() {
+  return (
+    <div className="w-full h-full flex flex-col space-y-6">
+      <div className="flex-1 bg-card border border-border overflow-y-auto rounded-lg shadow-sm">
+        <PromotionForm />
+      </div>
+    </div>
+  );
+}
