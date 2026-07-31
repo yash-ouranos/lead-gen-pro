@@ -114,10 +114,12 @@ async function findEmail(website: string | null, hunterKey?: string | null, apol
  }
  }
  }
- } catch (err) {
- console.error("Website scraping error:", err);
- }
- } catch (err) {
+    } catch (err: any) {
+      if (err.name !== 'TimeoutError' && err.code !== 'ENOTFOUND' && err.cause?.code !== 'ENOTFOUND') {
+        console.error("Website scraping error:", err);
+      }
+    }
+  } catch (err) {
  // Ignore URL parsing errors
  }
  return null;
@@ -184,17 +186,19 @@ async function runScrapingJob(campaignId: string, searchQuery: string, user: any
 
  await prisma.lead.create({
  data: {
- userId: user.id,
- campaignId,
- businessName,
- email,
+        userId: user.id,
+        campaignId,
+        businessName,
+        leadName: businessName,
+        email,
  website,
  phone,
  address,
  mapUrl,
  rating,
  reviewCount,
- status:"NEW",
+ status: "NEW",
+ isAiLead: true,
  promotions: {
  connect: { id: promotion.id }
  },

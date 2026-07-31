@@ -1,22 +1,32 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteTemplate } from "@/app/(app)/templates/actions";
 import { Edit, TrashCan, Add, Code } from "@carbon/icons-react";
+import toast from "react-hot-toast";
 import type { EmailTemplate } from "@prisma/client";
 
-export default function TemplateList({ templates }: { templates: EmailTemplate[] }) {
+export default function TemplateList({ templates: initialTemplates }: { templates: EmailTemplate[] }) {
   const router = useRouter();
+  const [templates, setTemplates] = useState(initialTemplates);
 
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this template?")) return;
     const formData = new FormData();
     formData.append("id", id);
     try {
-      await deleteTemplate(formData);
+      const res = await deleteTemplate(formData);
+      if (res?.success) {
+        toast.success("Template deleted successfully");
+        setTemplates(templates.filter(t => t.id !== id));
+      } else {
+        toast.error("Failed to delete template");
+      }
       router.refresh();
     } catch (err) {
       console.error(err);
+      toast.error("An error occurred while deleting");
     }
   }
 

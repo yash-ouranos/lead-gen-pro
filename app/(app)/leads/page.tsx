@@ -13,11 +13,12 @@ export default async function LeadsPage() {
  }
 
  // Fetch all leads for this user
- const leads = await prisma.lead.findMany({
- where: {
- userId: session.user.tenantId
- },
- orderBy: [
+  const leads = await prisma.lead.findMany({
+    where: {
+      userId: session.user.tenantId,
+      isAiLead: false
+    },
+    orderBy: [
  { aiScore:"desc"},
  { createdAt:"desc"}
  ],
@@ -25,9 +26,9 @@ export default async function LeadsPage() {
  campaign: {
  select: { location: true, niche: true }
  },
- emailLogs: {
- select: { openCount: true, openedAt: true, sentAt: true }
- },
+  emailLogs: {
+    orderBy: { sentAt: 'desc' }
+  },
  activities: {
  include: { user: { select: { name: true } } },
  orderBy: { createdAt:'desc'}
@@ -38,9 +39,14 @@ export default async function LeadsPage() {
  }
  });
 
- return (
- <div className="w-full h-full flex flex-col">
-  <LeadsViewToggle leads={leads} />
- </div>
- );
+  const templates = await prisma.emailTemplate.findMany({
+    where: { userId: session.user.tenantId },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return (
+  <div className="w-full h-full flex flex-col">
+   <LeadsViewToggle leads={leads} templates={templates} />
+  </div>
+  );
 }

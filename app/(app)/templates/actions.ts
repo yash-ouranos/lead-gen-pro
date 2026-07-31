@@ -55,14 +55,14 @@ export async function updateTemplate(formData: FormData) {
 export async function deleteTemplate(formData: FormData) {
  const session = await getServerSession(authOptions);
  if (!session?.user?.id) {
- throw new Error("Unauthorized");
+ return { success: false, error: "Unauthorized" };
  }
 
  const id = formData.get("id") as string;
 
  const template = await prisma.emailTemplate.findUnique({ where: { id } });
  if (template?.userId !== session.user.tenantId) {
- throw new Error("Unauthorized");
+ return { success: false, error: "Unauthorized" };
  }
 
  await prisma.emailTemplate.delete({
@@ -70,4 +70,5 @@ export async function deleteTemplate(formData: FormData) {
  });
 
  revalidatePath("/templates");
+ return { success: true };
 }

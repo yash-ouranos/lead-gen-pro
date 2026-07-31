@@ -75,10 +75,15 @@ export async function PUT(
     const updatedLead = await prisma.lead.update({
       where: { id },
       data: {
+        leadName: data.leadName,
         leadType: data.leadType,
         promotions: data.promotionIds ? { set: data.promotionIds.map((id: string) => ({ id })) } : undefined,
         referralId: data.referralId || null,
         preferredMethodOfContact: data.preferredMethodOfContact,
+        designation: data.designation,
+        industry: data.industry,
+        annualRevenue: data.annualRevenue,
+        temperature: data.temperature,
         name: data.name,
         businessName: data.businessName,
         phone: data.phone,

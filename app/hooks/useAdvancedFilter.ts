@@ -26,6 +26,9 @@ export function useAdvancedFilter<T extends Record<string, any>>(data: T[]) {
         return data.filter(item => {
             return activeFilters.every(f => {
                 let val = item[f.column];
+                if (Array.isArray(val)) {
+                    val = val.map(v => typeof v === 'object' && v !== null && v.name ? v.name : v).join(", ");
+                }
                 if (val === null || val === undefined) val = "";
                 val = String(val).toLowerCase();
                 const search = f.value.toLowerCase();

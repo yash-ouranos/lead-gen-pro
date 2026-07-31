@@ -7,6 +7,7 @@ import ConfirmModal from "@/app/components/ConfirmModal";
 import { sortStatuses } from "@/lib/utils";
 import { useAdvancedFilter } from "@/app/hooks/useAdvancedFilter";
 import AdvancedFilterPopover from "@/app/components/AdvancedFilterPopover";
+import toast from "react-hot-toast";
 
 const STATUS_COLUMNS = [
   { value: "name", label: "Name" },
@@ -35,7 +36,10 @@ export default function LeadStatusPage() {
     if (!itemToDelete) return;
     const res = await fetch(`/api/lead-status/${itemToDelete}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("Lead status deleted");
       fetchLeadStatuses();
+    } else {
+      toast.error("Failed to delete lead status");
     }
     setItemToDelete(null);
   };

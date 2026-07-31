@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createTemplate, updateTemplate } from "@/app/(app)/templates/actions";
+import toast from "react-hot-toast";
 import { Save } from "@carbon/icons-react";
 import type { EmailTemplate } from "@prisma/client";
 import dynamic from "next/dynamic";
@@ -48,12 +49,15 @@ export default function TemplateForm({ initialData }: { initialData?: EmailTempl
     try {
       if (isCreating) {
         await createTemplate(formData);
+        toast.success("Template created successfully");
       } else {
         await updateTemplate(formData);
+        toast.success("Template updated successfully");
       }
       router.push("/templates");
       router.refresh(); // Ensure the templates list gets updated
     } catch (err) {
+      toast.error("Failed to save template");
       console.error(err);
       setIsSubmitting(false);
     }

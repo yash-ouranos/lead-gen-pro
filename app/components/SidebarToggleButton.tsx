@@ -9,7 +9,7 @@ export default function SidebarToggleButton() {
   return (
     <button 
       onClick={toggleSidebar}
-      className="p-2 -ml-2 rounded-md hover:bg-accent text-muted-foreground transition-colors mr-2 hidden md:block"
+      className="p-2 -ml-2 rounded-md hover:bg-accent text-muted-foreground transition-colors mr-2 hidden md:block cursor-pointer"
       title="Toggle Sidebar"
     >
       <Menu className="h-5 w-5" />

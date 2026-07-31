@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "dotenv -e .env.local -- next dev",
+    "dev": "docker compose up -d && dotenv -e .env.local -- next dev",
     "build": "dotenv -e .env.production -- next build",
     "start": "dotenv -e .env.production -- next start",
     "lint": "eslint",
@@ -35,9 +35,11 @@
     "next-auth": "^4.24.15",
     "nodemailer": "^7.0.13",
     "openai": "^6.49.0",
+    "papaparse": "^5.5.4",
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-hot-toast": "^2.6.0",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
@@ -45,6 +47,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.1",
+    "@types/papaparse": "^5.5.2",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",

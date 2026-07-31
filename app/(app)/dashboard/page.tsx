@@ -70,7 +70,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex flex-col items-end">
             <h3 className="text-xs text-muted-foreground font-medium">Open Leads</h3>
-            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => l.status === 'OPEN').length}</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => ['NEW', 'Not Contacted'].includes(l.status)).length}</p>
           </div>
         </div>
 
@@ -81,7 +81,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex flex-col items-end">
             <h3 className="text-xs text-muted-foreground font-medium">In Progress Deals</h3>
-            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => ['CONTACTED', 'ENGAGED', 'MEETING_BOOKED'].includes(l.status)).length}</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => ['CONTACTED', 'Attempted to Contact', 'Contact in future', 'MEETING_BOOKED'].includes(l.status)).length}</p>
           </div>
         </div>
 

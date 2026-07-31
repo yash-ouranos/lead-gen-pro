@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Activity, ChevronLeft, Star, Renew, Launch, ChevronRight, Email, Location, Box, TrashCan, Edit } from "@carbon/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatStatus, sortStatuses } from "@/lib/utils";
+import { formatStatus, sortStatuses, getStatusColorClass } from "@/lib/utils";
+import ConfirmModal from "./ConfirmModal";
 
 type Lead = any; // We can type this properly later
 
@@ -12,11 +13,19 @@ type LeadTableProps = {
   leads: Lead[];
   onLeadClick?: (lead: Lead) => void;
   variant?: "dashboard" | "leads";
+  selectedLeadIds?: string[];
+  setSelectedLeadIds?: (ids: string[] | ((prev: string[]) => string[])) => void;
 };
 
 const ITEMS_PER_PAGE = 10;
 
-export default function LeadTable({ leads, onLeadClick, variant = "leads" }: LeadTableProps) {
+export default function LeadTable({ 
+  leads, 
+  onLeadClick, 
+  variant = "leads",
+  selectedLeadIds = [],
+  setSelectedLeadIds = () => {}
+}: LeadTableProps) {
  const router = useRouter();
  const [currentPage, setCurrentPage] = useState(1);
   const [localLeads, setLocalLeads] = useState<Lead[]>(leads);
@@ -28,7 +37,6 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
     fetch("/api/staffs").then(r => r.json()).then(setStaffs);
   }, []);
  const [updatingId, setUpdatingId] = useState<string | null>(null);
- const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
  const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
 
  useEffect(() => {
@@ -119,7 +127,7 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
     }
   };
 
- const totalPages = Math.ceil(localLeads.length / ITEMS_PER_PAGE) || 1;
+  const totalPages = Math.ceil(localLeads.length / ITEMS_PER_PAGE) || 1;
  const paginatedLeads = localLeads.slice(
  (currentPage - 1) * ITEMS_PER_PAGE,
  currentPage * ITEMS_PER_PAGE
@@ -144,6 +152,7 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
                   <th className="px-4 py-4 w-[60px] text-center font-semibold text-xs tracking-wider uppercase">ID</th>
                   <th className="px-6 py-4 font-semibold text-xs tracking-wider uppercase">LEAD NAME</th>
                   <th className="px-6 py-4 font-semibold text-xs tracking-wider uppercase">COMPANY NAME</th>
+                  <th className="px-6 py-4 text-center font-semibold text-xs tracking-wider uppercase">TEMPERATURE</th>
                   {variant === 'leads' ? (
                     <>
                       <th className="px-6 py-4 font-semibold text-xs tracking-wider uppercase">PROMOTION</th>
@@ -195,11 +204,25 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
                   </td>
                   <td className="px-6 py-4">
                     <div className="font-semibold text-foreground text-sm">
-                      {lead.name || lead.email || "Unknown"}
+                      {lead.leadName || lead.name || lead.email || "Unknown"}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-foreground">
                     {lead.businessName || "NA"}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    {lead.temperature ? (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        lead.temperature === 'Hot' ? 'bg-red-100 text-red-800 border-red-200' :
+                        lead.temperature === 'Warm' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                        lead.temperature === 'Cold' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                        'bg-gray-100 text-gray-800 border-gray-200'
+                      } border`}>
+                        {lead.temperature}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">NA</span>
+                    )}
                   </td>
                   {variant === 'leads' ? (
                     <>
@@ -249,15 +272,8 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
                             value={lead.status}
                             onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                             disabled={updatingId === lead.id}
-                            className={`appearance-none outline-none cursor-pointer w-full text-center px-2 py-1.5 pr-6 text-xs font-bold tracking-wide border transition-all ${
-                              lead.status === 'NEW' ? 'bg-primary/10 text-primary border-primary/20 hover:border-primary/50' :
-                              lead.status === 'CONTACTED' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:border-indigo-500/50' :
-                              lead.status === 'ENGAGED' ? 'bg-violet-500/10 text-violet-500 border-violet-500/20 hover:border-violet-500/50' :
-                              lead.status === 'MEETING_BOOKED' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:border-emerald-500/50' :
-                              lead.status === 'CLOSED_WON' ? 'bg-green-500/20 text-green-600 border-green-500/30 hover:border-green-500/50' :
-                              lead.status === 'OPEN' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:border-blue-500/50' :
-                              lead.status === 'HOLD' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:border-amber-500/50' :
-                              lead.status === 'CLOSED_LOST' ? 'bg-muted text-muted-foreground border-border hover:border-muted-foreground/50' : 'bg-muted text-muted-foreground border-border'
+                            className={`appearance-none outline-none cursor-pointer w-full text-center px-2 py-1.5 pr-6 text-xs font-bold tracking-wide border transition-all rounded ${
+                              getStatusColorClass(lead.status)
                             }`}
                           >
                             {sortStatuses(Array.from(new Set([lead.status, ...leadStatuses.filter(s => s.status === 'Active').map(s => s.name)]))).map(s => (
@@ -285,15 +301,8 @@ export default function LeadTable({ leads, onLeadClick, variant = "leads" }: Lea
                             value={lead.status}
                             onChange={(e) => handleStatusChange(lead.id, e.target.value)}
                             disabled={updatingId === lead.id}
-                            className={`appearance-none outline-none cursor-pointer w-full text-center px-2 py-1.5 pr-6 text-xs font-bold tracking-wide border transition-all ${
-                              lead.status === 'NEW' ? 'bg-primary/10 text-primary border-primary/20 hover:border-primary/50' :
-                              lead.status === 'CONTACTED' ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:border-indigo-500/50' :
-                              lead.status === 'ENGAGED' ? 'bg-violet-500/10 text-violet-500 border-violet-500/20 hover:border-violet-500/50' :
-                              lead.status === 'MEETING_BOOKED' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:border-emerald-500/50' :
-                              lead.status === 'CLOSED_WON' ? 'bg-green-500/20 text-green-600 border-green-500/30 hover:border-green-500/50' :
-                              lead.status === 'OPEN' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:border-blue-500/50' :
-                              lead.status === 'HOLD' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:border-amber-500/50' :
-                              lead.status === 'CLOSED_LOST' ? 'bg-muted text-muted-foreground border-border hover:border-muted-foreground/50' : 'bg-muted text-muted-foreground border-border'
+                            className={`appearance-none outline-none cursor-pointer w-full text-center px-2 py-1.5 pr-6 text-xs font-bold tracking-wide border transition-all rounded ${
+                              getStatusColorClass(lead.status)
                             }`}
                           >
                             {sortStatuses(Array.from(new Set([lead.status, ...leadStatuses.filter(s => s.status === 'Active').map(s => s.name)]))).map(s => (

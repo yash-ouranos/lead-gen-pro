@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function ReferralForm({ initialData }: { initialData?: any }) {
   const router = useRouter();
@@ -52,9 +53,11 @@ export default function ReferralForm({ initialData }: { initialData?: any }) {
     });
 
     if (res.ok) {
+      toast.success(initialData ? "Updated successfully" : "Created successfully");
       router.push("/referrals");
+      router.refresh();
     } else {
-      alert("Failed to save referral");
+      toast.error("Failed to save referral");
       setLoading(false);
     }
   };

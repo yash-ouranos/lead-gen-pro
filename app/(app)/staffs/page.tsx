@@ -3,6 +3,7 @@
 import { useState, useEffect } from"react";
 import {TrashCan, Edit, Add, Box , ChevronLeft, ChevronRight} from "@carbon/icons-react";
 import Link from "next/link";
+import toast from "react-hot-toast";
 import ConfirmModal from "@/app/components/ConfirmModal";
 import { useAdvancedFilter } from "@/app/hooks/useAdvancedFilter";
 import AdvancedFilterPopover from "@/app/components/AdvancedFilterPopover";
@@ -36,7 +37,10 @@ export default function StaffsPage() {
     if (!itemToDelete) return;
     const res = await fetch(`/api/staffs/${itemToDelete}`, { method: "DELETE" });
     if (res.ok) {
+      toast.success("Deleted successfully");
       fetchStaffs();
+    } else {
+      toast.error("Failed to delete");
     }
     setItemToDelete(null);
   };

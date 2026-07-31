@@ -20,9 +20,10 @@ interface ComposeFormProps {
   templates: EmailTemplate[];
   initialSubject: string;
   initialBody: string;
+  onSuccess?: () => void;
 }
 
-export default function ComposeForm({ leadId, leadData, templates, initialSubject, initialBody }: ComposeFormProps) {
+export default function ComposeForm({ leadId, leadData, templates, initialSubject, initialBody, onSuccess }: ComposeFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +74,14 @@ export default function ComposeForm({ leadId, leadData, templates, initialSubjec
       setError(result.error);
       setIsSubmitting(false);
     } else {
-      router.push("/dashboard");
+      if (onSuccess) {
+        onSuccess();
+        setSubject(initialSubject);
+        setBody(initialBody);
+        setIsSubmitting(false);
+      } else {
+        router.push("/dashboard");
+      }
     }
   }
 

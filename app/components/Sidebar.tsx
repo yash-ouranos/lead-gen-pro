@@ -12,7 +12,8 @@ export default function Sidebar() {
   const mainNav = [
     { href: "/dashboard", label: "Dashboard", icon: Dashboard },
     { href: "/leads", label: "Leads", icon: UserMultiple },
-    { href: "/campaigns/new", label: "AI Lead Scraping", icon: Bot },
+    { href: "/campaigns", label: "AI Lead Scraping", icon: Bot },
+    { href: "/ai-leads", label: "AI Leads", icon: UserMultiple },
     { href: "/templates", label: "Templates", icon: Document },
   ];
 
@@ -21,6 +22,8 @@ export default function Sidebar() {
     { href: "/promotions", label: "Promotions", icon: Gift },
     { href: "/referrals", label: "Referrals", icon: Connect },
     { href: "/method-of-contact", label: "Method Of Contact", icon: Phone },
+    { href: "/designations", label: "Designations", icon: UserRole },
+    { href: "/industries", label: "Industries", icon: Dashboard },
     { href: "/lead-status", label: "Lead Status", icon: Task },
     { href: "/permissions", label: "Permissions", icon: Security },
     { href: "/roles", label: "Roles", icon: UserRole },

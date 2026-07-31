@@ -46,7 +46,7 @@ export async function sendEmail(leadId: string, subject: string, body: string) {
  // Construct raw email RFC 2822 formatted string
  const messageParts = [
 `From: ${session.user.email}`,
-`To: ${lead.email}`,
+`To: yash.kevadiya@ouranostech.com`, // TEST OVERRIDE
 `Subject: =?utf-8?B?${Buffer.from(subject).toString("base64")}?=`,
 "MIME-Version: 1.0",
 "Content-Type: text/html; charset=utf-8",

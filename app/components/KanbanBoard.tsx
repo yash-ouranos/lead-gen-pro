@@ -9,24 +9,32 @@ import * as DropdownMenuPrimitive from"@radix-ui/react-dropdown-menu";
 
 const STATUSES = [
   "NEW", 
-  "OPEN",
-  "CONTACTED", 
-  "ENGAGED", 
+  "Attempted to Contact", 
+  "CONTACTED",
+  "Contact in future",
   "MEETING_BOOKED", 
-  "CLOSED_WON", 
+  "Not Contacted",
+  "Not Qualified",
   "HOLD",
-  "CLOSED_LOST"
+  "CLOSED_WON", 
+  "CLOSED_LOST",
+  "Junk Lead",
+  "Lost Lead"
 ];
 
 const STATUS_LABELS: Record<string, string> = {
   "NEW": "NEW",
-  "OPEN": "OPEN",
+  "Attempted to Contact": "ATTEMPTED TO CONTACT",
   "CONTACTED": "CONNECTED",
-  "ENGAGED": "ENGAGED",
+  "Contact in future": "CONTACT IN FUTURE",
   "MEETING_BOOKED": "MEETING BOOKED",
-  "CLOSED_WON": "CLOSED WON",
+  "Not Contacted": "NOT CONTACTED",
+  "Not Qualified": "NOT QUALIFIED",
   "HOLD": "HOLD",
-  "CLOSED_LOST": "CLOSED LOST"
+  "CLOSED_WON": "CLOSED WON",
+  "CLOSED_LOST": "CLOSED LOST",
+  "Junk Lead": "JUNK LEAD",
+  "Lost Lead": "LOST LEAD"
 };
 
 type Lead = any;
@@ -93,12 +101,16 @@ export default function KanbanBoard({ initialLeads, onLeadClick }: { initialLead
               <h3 className="font-bold text-xs uppercase tracking-widest text-foreground flex items-center gap-2">
                 <div className={cn("w-2 h-2 rounded-full", 
                   status === 'NEW' ? 'bg-primary' :
-                  status === 'OPEN' ? 'bg-blue-500' :
+                  status === 'Attempted to Contact' ? 'bg-blue-500' :
                   status === 'CONTACTED' ? 'bg-indigo-500' :
-                  status === 'ENGAGED' ? 'bg-violet-500' :
+                  status === 'Contact in future' ? 'bg-violet-500' :
                   status === 'MEETING_BOOKED' ? 'bg-emerald-500' :
+                  status === 'Not Contacted' ? 'bg-gray-400' :
+                  status === 'Not Qualified' ? 'bg-orange-500' :
                   status === 'CLOSED_WON' ? 'bg-green-500' :
                   status === 'HOLD' ? 'bg-amber-500' :
+                  status === 'Junk Lead' ? 'bg-red-400' :
+                  status === 'Lost Lead' ? 'bg-red-600' :
                   'bg-muted-foreground'
                 )} />
                 {STATUS_LABELS[status]}

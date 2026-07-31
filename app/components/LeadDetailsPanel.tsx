@@ -4,9 +4,13 @@ import { useState, useEffect } from "react";
 import { Edit, Close, Chat } from "@carbon/icons-react";
 import { useRouter } from "next/navigation";
 import { formatStatus, sortStatuses } from "@/lib/utils";
+import { transferToMainLeads } from "@/app/(app)/ai-leads/actions";
+import toast from "react-hot-toast";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
+import ComposeForm from "@/app/(app)/email/compose/[leadId]/ComposeForm";
+import EmailHistory from "@/app/components/EmailHistory";
 
-export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose: () => void }) {
+export default function LeadDetailsPanel({ lead, templates = [], onClose }: { lead: any; templates?: any[]; onClose: () => void }) {
   const router = useRouter();
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -16,7 +20,25 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
   const [editedLead, setEditedLead] = useState<any>(lead);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [activeTab, setActiveTab] = useState<"NOTES" | "HISTORY">("NOTES");
+  const [activeTab, setActiveTab] = useState<"NOTES" | "HISTORY" | "EMAILS">("NOTES");
+  const [isComposing, setIsComposing] = useState(false);
+
+  // Format initial email template
+  const businessName = lead?.businessName || "";
+  const niche = lead?.campaign?.niche || "your industry";
+  const location = lead?.campaign?.location || "your area";
+
+  const initialSubject = `Quick question about ${businessName}`;
+  const initialBody = `Hi there,
+
+I noticed ${businessName} on Google Maps and wanted to reach out. 
+
+We specialize in helping businesses in ${niche} to improve their digital presence and attract more customers in ${location}. 
+
+Would you be open to a quick 5-minute chat next week to see if we'd be a good fit to help you grow?
+
+Best regards,
+[Your Name]`;
 
   const [staffs, setStaffs] = useState<any[]>([]);
   const [leadStatuses, setLeadStatuses] = useState<any[]>([]);
@@ -34,6 +56,19 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
     fetch('/api/staffs').then(res => res.json()).then(data => setStaffs(Array.isArray(data) ? data : []));
     fetch('/api/lead-status').then(res => res.json()).then(data => setLeadStatuses(Array.isArray(data) ? data : []));
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'EMAILS') {
+      fetch('/api/emails/sync', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.syncedCount && data.syncedCount > 0) {
+            router.refresh(); // Refresh page to pull new emailLogs
+          }
+        })
+        .catch(err => console.error("Sync error:", err));
+    }
+  }, [activeTab, router]);
 
   if (!lead || !editedLead) return null;
 
@@ -55,6 +90,7 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
     setIsUpdating(true);
     try {
       const payload = {
+        leadName: editedLead.leadName,
         name: editedLead.name,
         businessName: editedLead.businessName,
         website: editedLead.website,
@@ -64,6 +100,10 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
         followUpDate: editedLead.followUpDate,
         assignStaffId: editedLead.assignStaffId,
         status: editedLead.status,
+        designation: editedLead.designation,
+        industry: editedLead.industry,
+        annualRevenue: editedLead.annualRevenue,
+        temperature: editedLead.temperature,
       };
       
       const res = await fetch(`/api/leads/${lead.id}`, {
@@ -214,12 +254,31 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-white border-b shrink-0 rounded-t-lg">
           <h2 className="text-xl font-bold text-gray-900">Lead Details</h2>
-          <button 
-            onClick={onClose}
-            className="cursor-pointer p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-          >
-            <Close size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            {lead.isAiLead && (
+              <button 
+                onClick={async () => {
+                  try {
+                    await transferToMainLeads([lead.id]);
+                    toast.success("Lead transferred successfully");
+                    onClose();
+                    router.refresh();
+                  } catch (e) {
+                    toast.error("Failed to transfer lead");
+                  }
+                }}
+                className="cursor-pointer px-4 py-2 bg-emerald-500 text-white text-sm font-medium rounded hover:bg-emerald-600 transition-colors"
+              >
+                Transfer to CRM
+              </button>
+            )}
+            <button 
+              onClick={onClose}
+              className="cursor-pointer p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+            >
+              <Close size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Content Body - 2 Columns */}
@@ -228,7 +287,8 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
           {/* Left Column - Details */}
           <div className="w-full md:w-[350px] lg:w-[450px] bg-white border rounded shadow-sm flex flex-col overflow-hidden shrink-0">
             <div className="flex-1 p-5 overflow-y-auto">
-              {renderDetailRow("Name", "name", editedLead.name, "text")}
+              {renderDetailRow("Lead Name", "leadName", editedLead.leadName, "text")}
+              {renderDetailRow("Contact Name", "name", editedLead.name, "text")}
               {renderDetailRow("Company Name", "businessName", editedLead.businessName, "text")}
               {renderDetailRow("Website", "website", editedLead.website, "text")}
               {renderDetailRow("Contact No.", "phone", editedLead.phone, "text")}
@@ -237,6 +297,10 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
               {renderDetailRow("Follow-Up Date", "followUpDate", editedLead.followUpDate ? new Date(editedLead.followUpDate).toLocaleDateString() : null, "date")}
               {renderDetailRow("Assign User", "assignStaffId", staffs.find(s => s.id === editedLead.assignStaffId)?.name, "select", staffs.map(s => ({ id: s.id, value: s.id, label: s.name })))}
               {renderDetailRow("Lead Status", "status", editedLead.status ? formatStatus(editedLead.status) : null, "select", sortStatuses(leadStatuses).map(s => ({ id: s.id, value: s.name, label: formatStatus(s.name) })))}
+              {renderDetailRow("Lead Temperature", "temperature", editedLead.temperature, "select", [{ id: 'Hot', value: 'Hot', label: 'Hot' }, { id: 'Warm', value: 'Warm', label: 'Warm' }, { id: 'Cold', value: 'Cold', label: 'Cold' }])}
+              {renderDetailRow("Designation", "designation", editedLead.designation, "text")}
+              {renderDetailRow("Industry", "industry", editedLead.industry, "text")}
+              {renderDetailRow("Annual Revenue", "annualRevenue", editedLead.annualRevenue, "text")}
             </div>
             
             {dirty && (
@@ -254,14 +318,20 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
 
           {/* Right Column - Notes & Activities */}
           <div className="flex-1 bg-white border rounded shadow-sm flex flex-col overflow-hidden">
-            <div className="flex px-2 pt-2 border-b gap-2 bg-slate-50 shrink-0">
-              <button 
+            <div className="flex border-b border-gray-200 mt-6 px-6 bg-gray-50/50">
+              <button
                 onClick={() => setActiveTab('NOTES')}
                 className={`cursor-pointer px-4 py-2 font-medium text-[15px] border-b-2 transition-colors ${activeTab === 'NOTES' ? 'border-primary text-primary bg-white rounded-t' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
-                Note Details
+                Notes
               </button>
-              <button 
+              <button
+                onClick={() => setActiveTab('EMAILS')}
+                className={`cursor-pointer px-4 py-2 font-medium text-[15px] border-b-2 transition-colors ${activeTab === 'EMAILS' ? 'border-primary text-primary bg-white rounded-t' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                Emails
+              </button>
+              <button
                 onClick={() => setActiveTab('HISTORY')}
                 className={`cursor-pointer px-4 py-2 font-medium text-[15px] border-b-2 transition-colors ${activeTab === 'HISTORY' ? 'border-primary text-primary bg-white rounded-t' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
@@ -290,6 +360,63 @@ export default function LeadDetailsPanel({ lead, onClose }: { lead: any; onClose
                     ))}
                   </div>
                 )
+              )}
+
+              {activeTab === 'EMAILS' && (
+                <div className="flex flex-col h-full bg-white relative">
+                  {/* Gmail Style Header */}
+                  <div className="flex items-start justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
+                    <div className="flex flex-col gap-0.5">
+                      <h3 className="font-bold text-gray-900 text-lg">{lead.leadName || lead.businessName}</h3>
+                      <p className="text-sm text-gray-600">{lead.email || 'No email provided'} • {lead.phone || 'No phone provided'}</p>
+                      <div className="flex gap-2 text-xs text-blue-600 mt-1">
+                        {lead.website && <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer" className="hover:underline">{lead.website}</a>}
+                        {lead.address && <span className="text-gray-400">• {lead.address}</span>}
+                      </div>
+                    </div>
+                    <div>
+                      {isComposing ? (
+                        <button 
+                          onClick={() => setIsComposing(false)}
+                          className="cursor-pointer px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                        >
+                          Back to Inbox
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => setIsComposing(true)}
+                          className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                        >
+                          Compose Email
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Body Area */}
+                  <div className="flex-1 overflow-y-auto">
+                    {isComposing ? (
+                      <div className="animate-in slide-in-from-top-2 duration-200">
+                        <ComposeForm 
+                          leadId={lead.id} 
+                          leadData={{ businessName: lead.businessName, niche: lead.campaign?.niche || "", location: [lead.city, lead.state, lead.country].filter(Boolean).join(", "), website: lead.website || "", email: lead.email || "No email" }}
+                          templates={templates}
+                          initialSubject={initialSubject} 
+                          initialBody={initialBody}
+                          onSuccess={() => {
+                            toast.success("Email sent successfully!");
+                            setIsComposing(false);
+                            router.refresh();
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="animate-in fade-in duration-200">
+                        <EmailHistory emailLogs={lead.emailLogs || []} />
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               {activeTab === 'HISTORY' && (

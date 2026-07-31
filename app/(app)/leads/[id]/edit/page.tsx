@@ -3,8 +3,43 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
+import SearchableCreatableSelect from "@/app/components/SearchableCreatableSelect";
+import { DocumentAdd, Building, Phone, Earth, Information, Attachment, ArrowRight } from "@carbon/icons-react";
+import toast from "react-hot-toast";
 import { UserFollow, Save, CheckmarkOutline, ArrowLeft } from "@carbon/icons-react";
 import { formatStatus, sortStatuses } from "@/lib/utils";
+
+type LocationData = {
+  [country: string]: {
+    [state: string]: string[];
+  };
+};
+
+const locationData: LocationData = {
+  USA: {
+    California: ["Los Angeles", "San Francisco", "San Diego"],
+    Texas: ["Austin", "Houston", "Dallas"],
+    "New York": ["New York City", "Buffalo"],
+    Florida: ["Miami", "Orlando", "Tampa"],
+    Illinois: ["Chicago", "Springfield"],
+  },
+  Canada: {
+    Ontario: ["Toronto", "Ottawa"],
+    "British Columbia": ["Vancouver", "Victoria"],
+  },
+  UK: {
+    England: ["London", "Manchester", "Birmingham"],
+  },
+  Australia: {
+    "New South Wales": ["Sydney", "Newcastle"],
+  },
+  India: {
+    Maharashtra: ["Mumbai", "Pune", "Nagpur"],
+    Karnataka: ["Bangalore", "Mysore"],
+    Delhi: ["New Delhi"],
+    Gujarat: ["Ahmedabad", "Surat"],
+  },
+};
 
 export default function EditLeadPage() {
   const router = useRouter();
@@ -16,6 +51,8 @@ export default function EditLeadPage() {
   const [staffs, setStaffs] = useState<any[]>([]);
   const [methodOfContacts, setMethodOfContacts] = useState<any[]>([]);
   const [leadStatuses, setLeadStatuses] = useState<any[]>([]);
+  const [designations, setDesignations] = useState<any[]>([]);
+  const [industries, setIndustries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
@@ -39,7 +76,12 @@ export default function EditLeadPage() {
     pinCode: "",
     products: [] as string[],
     services: [] as string[],
-    remarks: ""
+    remarks: "",
+    leadName: "",
+    designation: "",
+    industry: "",
+    annualRevenue: "",
+    temperature: ""
   });
 
   useEffect(() => {
@@ -48,15 +90,20 @@ export default function EditLeadPage() {
       fetch("/api/staffs").then(r => r.json()),
       fetch(`/api/leads/${id}`).then(r => r.json()),
       fetch("/api/method-of-contact").then(r => r.json()),
-      fetch("/api/lead-status").then(r => r.json())
-    ]).then(([proms, stfs, leadData, mocs, lses]) => {
+      fetch("/api/lead-status").then(r => r.json()),
+      fetch("/api/designations").then(r => r.json()),
+      fetch("/api/industries").then(r => r.json())
+    ]).then(([proms, stfs, leadData, mocs, lses, desgs, indss]) => {
       setPromotions(proms);
       setStaffs(stfs);
       setMethodOfContacts(mocs);
       setLeadStatuses(lses);
+      setDesignations(desgs);
+      setIndustries(indss);
       
       if (leadData && !leadData.error) {
         setFormData({
+          leadName: leadData.leadName || "",
           leadType: leadData.leadType || [],
           promotionIds: leadData.promotionIds || [],
           referralId: leadData.referralId || "",
@@ -76,7 +123,11 @@ export default function EditLeadPage() {
           pinCode: leadData.pinCode || "",
           products: leadData.products || [],
           services: leadData.services || [],
-          remarks: leadData.remarks || ""
+          remarks: leadData.remarks || "",
+          designation: leadData.designation || "",
+          industry: leadData.industry || "",
+          annualRevenue: leadData.annualRevenue || "",
+          temperature: leadData.temperature || ""
         });
       }
       setLoading(false);
@@ -94,6 +145,33 @@ export default function EditLeadPage() {
     }
   }, [formData.promotionIds]);
 
+  const availableStates = formData.country ? Object.keys(locationData[formData.country] || {}) : [];
+  const availableCities = formData.state && formData.country ? (locationData[formData.country] as any)[formData.state] || [] : [];
+
+  const handleCreateDesignation = async (name: string) => {
+    const res = await fetch("/api/designations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, status: "Active" })
+    });
+    if (res.ok) {
+      const newItem = await res.json();
+      setDesignations([newItem, ...designations]);
+    }
+  };
+
+  const handleCreateIndustry = async (name: string) => {
+    const res = await fetch("/api/industries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, status: "Active" })
+    });
+    if (res.ok) {
+      const newItem = await res.json();
+      setIndustries([newItem, ...industries]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormErrors({});
@@ -101,6 +179,7 @@ export default function EditLeadPage() {
     const newErrors: Record<string, string> = {};
     if (formData.leadType.length === 0) newErrors.leadType = "Lead Type is required.";
     if (!formData.preferredMethodOfContact) newErrors.preferredMethodOfContact = "Method of Contact is required.";
+    if (!formData.leadName.trim()) newErrors.leadName = "Lead Name is required.";
     if (!formData.name.trim()) newErrors.name = "Name is required.";
     if (!formData.status) newErrors.status = "Lead Status is required.";
 
@@ -116,9 +195,10 @@ export default function EditLeadPage() {
     });
     
     if (res.ok) {
+      toast.success("Lead updated successfully");
       router.push("/dashboard");
     } else {
-      alert("Failed to update lead");
+      toast.error("Failed to update lead");
     }
   };
 
@@ -140,6 +220,12 @@ export default function EditLeadPage() {
         <div className="mb-10">
           <h2 className="text-sm font-bold uppercase tracking-widest mb-6 border-b border-border pb-3 text-foreground">Lead Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-6">
+            <div>
+              <label className={labelClasses}>Lead Name *</label>
+              <input type="text" value={formData.leadName} onChange={e => setFormData({...formData, leadName: e.target.value})} className={getInputClasses('leadName')} placeholder="Enter Lead Name"/>
+              {formErrors.leadName && <p className="text-red-500 text-xs mt-1.5">{formErrors.leadName}</p>}
+            </div>
+            
             <div>
               <label className={labelClasses}>Lead Type *</label>
               <div className={`relative ${formErrors.leadType ? 'border-b border-red-500' : ''}`}>
@@ -195,6 +281,31 @@ export default function EditLeadPage() {
               </select>
               {formErrors.preferredMethodOfContact && <p className="text-red-500 text-xs mt-1.5">{formErrors.preferredMethodOfContact}</p>}
             </div>
+            
+            <div>
+              <label className={labelClasses}>Lead Status *</label>
+              <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className={`${getInputClasses('status')} appearance-none`}
+                style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23737373%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem top 50%', backgroundSize: '0.65rem auto' }}
+              >
+                <option value="" disabled>Select Status</option>
+                {sortStatuses(leadStatuses.filter(s => s.status === 'Active' || s.name === formData.status)).map(s => (
+                  <option key={s.id} value={s.name}>{formatStatus(s.name)}</option>
+                ))}
+              </select>
+              {formErrors.status && <p className="text-red-500 text-xs mt-1.5">{formErrors.status}</p>}
+            </div>
+            
+            <div>
+              <label className={labelClasses}>Lead Temperature</label>
+              <select value={formData.temperature} onChange={e => setFormData({...formData, temperature: e.target.value})} className={`${getInputClasses('temperature')} appearance-none`}
+                style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23737373%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem top 50%', backgroundSize: '0.65rem auto' }}
+              >
+                <option value="">Select Temperature</option>
+                <option value="Hot">Hot</option>
+                <option value="Warm">Warm</option>
+                <option value="Cold">Cold</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -207,10 +318,7 @@ export default function EditLeadPage() {
               <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={getInputClasses('name')} placeholder="Enter Name"/>
               {formErrors.name && <p className="text-red-500 text-xs mt-1.5">{formErrors.name}</p>}
             </div>
-            <div>
-              <label className={labelClasses}>Company Name</label>
-              <input type="text" value={formData.businessName} onChange={e => setFormData({...formData, businessName: e.target.value})} className={getInputClasses('businessName')} placeholder="Enter Company Name"/>
-            </div>
+
             <div>
               <label className={labelClasses}>Mobile No.1</label>
               <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className={getInputClasses('phone')} placeholder="Enter Mobile Number"/>
@@ -220,10 +328,7 @@ export default function EditLeadPage() {
               <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={getInputClasses('email')} placeholder="Enter Email"/>
             </div>
 
-            <div>
-              <label className={labelClasses}>Website</label>
-              <input type="text" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className={getInputClasses('website')} placeholder="Enter Website"/>
-            </div>
+
             <div>
               <label className={labelClasses}>Assign User</label>
               <select value={formData.assignStaffId} onChange={e => setFormData({...formData, assignStaffId: e.target.value})} className={`${getInputClasses('assignStaffId')} appearance-none`}
@@ -239,17 +344,45 @@ export default function EditLeadPage() {
               <label className={labelClasses}>Follow-Up Date</label>
               <input type="date" value={formData.followUpDate} onChange={e => setFormData({...formData, followUpDate: e.target.value})} className={getInputClasses('followUpDate')} />
             </div>
+
             <div>
-              <label className={labelClasses}>Lead Status *</label>
-              <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className={`${getInputClasses('status')} appearance-none`}
-                style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23737373%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem top 50%', backgroundSize: '0.65rem auto' }}
-              >
-                <option value="" disabled>Select Status</option>
-                {sortStatuses(leadStatuses.filter(s => s.status === 'Active' || s.name === formData.status)).map(s => (
-                  <option key={s.id} value={s.name}>{formatStatus(s.name)}</option>
-                ))}
-              </select>
-              {formErrors.status && <p className="text-red-500 text-xs mt-1.5">{formErrors.status}</p>}
+              <label className={labelClasses}>Designation</label>
+              <SearchableCreatableSelect
+                options={designations.filter(d => d.status === 'Active' || d.name === formData.designation)}
+                value={formData.designation}
+                onChange={(val) => setFormData({ ...formData, designation: val })}
+                onCreate={handleCreateDesignation}
+                placeholder="Select or add..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Company Details */}
+        <div className="mb-10">
+          <h2 className="text-sm font-bold uppercase tracking-widest mb-6 border-b border-border pb-3 text-foreground">Company Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-6">
+            <div>
+              <label className={labelClasses}>Company Name</label>
+              <input type="text" value={formData.businessName} onChange={e => setFormData({...formData, businessName: e.target.value})} className={getInputClasses('businessName')} placeholder="Enter Company Name"/>
+            </div>
+            <div>
+              <label className={labelClasses}>Industry</label>
+              <SearchableCreatableSelect
+                options={industries.filter(i => i.status === 'Active' || i.name === formData.industry)}
+                value={formData.industry}
+                onChange={(val) => setFormData({ ...formData, industry: val })}
+                onCreate={handleCreateIndustry}
+                placeholder="Select or add..."
+              />
+            </div>
+            <div>
+              <label className={labelClasses}>Annual Revenue</label>
+              <input type="text" value={formData.annualRevenue} onChange={e => setFormData({...formData, annualRevenue: e.target.value})} className={getInputClasses('annualRevenue')} placeholder="e.g. $1M - $5M"/>
+            </div>
+            <div>
+              <label className={labelClasses}>Website</label>
+              <input type="text" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} className={getInputClasses('website')} placeholder="Enter Website"/>
             </div>
           </div>
         </div>
@@ -263,16 +396,31 @@ export default function EditLeadPage() {
               <input type="text" value={formData.streetNo} onChange={e => setFormData({...formData, streetNo: e.target.value})} className={getInputClasses('streetNo')} placeholder="Enter Address Line 1"/>
             </div>
             <div>
-              <label className={labelClasses}>City</label>
-              <input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className={getInputClasses('city')} placeholder="Enter City"/>
+              <label className={labelClasses}>Country</label>
+              <select value={formData.country} onChange={e => setFormData({...formData, country: e.target.value, state: '', city: ''})} className={getInputClasses('country')}>
+                <option value="" disabled>Select Country</option>
+                {Object.keys(locationData).map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className={labelClasses}>State</label>
-              <input type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className={getInputClasses('state')} placeholder="Enter State"/>
+              <select value={formData.state} onChange={e => setFormData({...formData, state: e.target.value, city: ''})} className={getInputClasses('state')} disabled={!formData.country}>
+                <option value="" disabled>Select State</option>
+                {availableStates.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className={labelClasses}>Country</label>
-              <input type="text" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className={getInputClasses('country')} placeholder="Enter Country"/>
+              <label className={labelClasses}>City</label>
+              <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className={getInputClasses('city')} disabled={!formData.state}>
+                <option value="" disabled>Select City</option>
+                {availableCities.map((city: string) => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -303,10 +451,10 @@ export default function EditLeadPage() {
         </div>
 
         <div className="flex justify-end gap-4 pb-12">
-          <button type="button" onClick={() => router.push("/dashboard")} className="px-6 py-2.5 bg-card text-foreground hover:bg-muted font-semibold transition-all">
+          <button type="button" onClick={() => router.push("/dashboard")} className="cursor-pointer px-6 py-2.5 bg-card text-foreground hover:bg-muted font-semibold transition-all">
             Cancel
           </button>
-          <button type="submit" className="px-6 py-2.5 bg-primary text-primary-foreground flex items-center gap-2 hover:bg-primary/90 font-semibold transition-all shadow-sm">
+          <button type="submit" className="cursor-pointer px-6 py-2.5 bg-primary text-primary-foreground flex items-center gap-2 hover:bg-primary/90 font-semibold transition-all shadow-sm">
             <Save size={16} />
             Update Lead
           </button>

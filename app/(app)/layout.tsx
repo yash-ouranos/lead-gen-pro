@@ -5,6 +5,7 @@ import RequireAuth from "@/app/components/RequireAuth";
 import { SidebarProvider } from "@/app/contexts/SidebarContext";
 import Sidebar from "@/app/components/Sidebar";
 import Header from "@/app/components/Header";
+import { Toaster } from "react-hot-toast";
 
 export default async function AppLayout({
   children,
@@ -22,6 +23,7 @@ export default async function AppLayout({
       <div className="flex h-screen bg-background text-foreground overflow-hidden">
         <Sidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
+          <Toaster position="top-right" />
           <Header />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-muted/30">
             <RequireAuth>

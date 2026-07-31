@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function LeadStatusForm({ initialData }: { initialData?: any }) {
   const router = useRouter();
@@ -35,9 +36,11 @@ export default function LeadStatusForm({ initialData }: { initialData?: any }) {
     });
 
     if (res.ok) {
+      toast.success(initialData ? "Lead status updated" : "Lead status created");
       router.push("/lead-status");
+      router.refresh(); // Refresh the list
     } else {
-      alert("Failed to save leadStatus");
+      toast.error("Failed to save lead status");
       setLoading(false);
     }
   };

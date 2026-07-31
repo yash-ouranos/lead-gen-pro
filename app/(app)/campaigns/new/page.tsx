@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createCampaign } from "./actions";
-import { Earth, Renew, Portfolio, Search, CharacterPatterns } from "@carbon/icons-react";
+import { Earth, Renew, Portfolio, CloudDataOps, Search, Information, ArrowLeft, CharacterPatterns } from "@carbon/icons-react";
+import toast from "react-hot-toast";
 
 type LocationData = {
   [country: string]: {
@@ -75,22 +77,38 @@ export default function NewCampaignPage() {
     const result = await createCampaign(formData);
 
     if (result.error) {
+      toast.error(result.error);
       setError(result.error);
       setIsSubmitting(false);
     } else {
-      router.push("/dashboard");
+      toast.success("Scraping campaign launched!");
+      router.push("/campaigns");
     }
   }
 
   return (
     <div className="w-full h-full flex flex-col bg-card animate-in fade-in duration-500 overflow-y-auto">
+      <div className="flex-none p-6 md:p-8 border-b border-border flex justify-between items-center bg-card sticky top-0 z-10">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Launch Scraping Campaign</h1>
+          <p className="text-sm text-muted-foreground mt-1">Configure AI to search the web for your ideal leads.</p>
+        </div>
+        <Link 
+          href="/campaigns"
+          className="flex items-center px-4 py-2 border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors shadow-sm cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Campaigns
+        </Link>
+      </div>
+
       {error && (
         <div className="bg-destructive/10 text-destructive p-4 border-b border-destructive/20 text-sm font-medium">
           {error}
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="flex-1 p-6 md:p-8 space-y-8" noValidate>
+      <form onSubmit={onSubmit} className="flex-1 p-6 md:p-8 max-w-4xl mx-auto w-full" noValidate>
         <div className="space-y-8">
           
           {/* Target Audience */}

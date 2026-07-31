@@ -132,7 +132,7 @@ export default function HeaderTitle() {
       {showBackButton && (
         <button 
           onClick={() => router.back()} 
-          className="p-1.5 -ml-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          className="cursor-pointer p-1.5 -ml-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
         >
           <ArrowLeft size={20} />
         </button>

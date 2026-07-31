@@ -42,13 +42,13 @@ export default function ConfirmModal({
         <div className="px-6 py-4 bg-muted/50 border-t border-border flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 border border-border text-foreground hover:bg-muted transition-colors text-sm font-medium"
+            className="px-4 py-2 border border-border text-foreground hover:bg-muted transition-colors text-sm font-medium cursor-pointer"
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-2 text-primary-foreground transition-colors shadow-sm text-sm font-medium ${
+            className={`px-4 py-2 text-primary-foreground transition-colors shadow-sm text-sm font-medium cursor-pointer ${
               isDanger 
                 ? "bg-red-600 hover:bg-red-700" 
                 : "bg-primary hover:bg-primary/90"

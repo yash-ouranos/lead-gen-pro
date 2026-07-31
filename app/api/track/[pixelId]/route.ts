@@ -18,35 +18,36 @@ export async function GET(request: Request, { params }: { params: Promise<{ pixe
  },
  });
 
- const lead = await prisma.lead.findUnique({ where: { id: emailLog.leadId } });
- 
- if (lead) {
- const activitiesToCreate = [
- {
- type:"EMAIL_OPENED",
- description:`Email opened:"${emailLog.subject}"`
- }
- ];
+  const lead = await prisma.lead.findUnique({ where: { id: emailLog.leadId } });
+  
+  if (lead) {
+    const activitiesToCreate = [
+      {
+        userId: lead.userId,
+        type: "EMAIL_OPENED",
+        description: `Email opened: "${emailLog.subject}"`
+      }
+    ];
 
- // If the lead was just CONTACTED or NEW, bump them to ENGAGED
- let newStatus = lead.status;
- if (lead.status ==="CONTACTED"|| lead.status ==="NEW") {
- newStatus ="ENGAGED";
- activitiesToCreate.push({
- type:"STATUS_CHANGE",
- description:`Status changed from ${lead.status} to ENGAGED`
- });
- }
+    let newStatus = lead.status;
+    if (['NEW', 'Not Contacted'].includes(lead.status)) {
+      newStatus = "Attempted to Contact";
+      activitiesToCreate.push({
+        userId: lead.userId,
+        type: "STATUS_CHANGE",
+        description: `Status changed from ${lead.status} to ${newStatus}`
+      });
+    }
 
- await prisma.lead.update({
- where: { id: lead.id },
- data: { 
- status: newStatus,
- activities: {
- create: activitiesToCreate
- }
- }
- });
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: { 
+        status: newStatus,
+        activities: {
+          create: activitiesToCreate
+        }
+      }
+    });
  }
  }
  } catch (error) {

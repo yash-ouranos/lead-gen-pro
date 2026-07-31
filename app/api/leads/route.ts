@@ -15,12 +15,17 @@ export async function POST(request: Request) {
  const lead = await prisma.lead.create({
  data: {
  userId: session.user.tenantId,
+ leadName: data.leadName || null,
  leadType: data.leadType || [],
  promotions: data.promotionIds?.length > 0 ? {
  connect: data.promotionIds.map((id: string) => ({ id }))
  } : undefined,
  referralId: data.referralId || null,
  preferredMethodOfContact: data.preferredMethodOfContact || null,
+ designation: data.designation || null,
+ industry: data.industry || null,
+ annualRevenue: data.annualRevenue || null,
+ temperature: data.temperature || null,
  
  name: data.name || null,
  businessName: data.businessName ||"Unknown",

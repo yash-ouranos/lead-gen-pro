@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function RoleForm({ initialData, availablePermissions = [] }: { initialData?: any, availablePermissions?: any[] }) {
   const router = useRouter();
@@ -44,9 +45,11 @@ export default function RoleForm({ initialData, availablePermissions = [] }: { i
     });
 
     if (res.ok) {
+      toast.success(initialData ? "Updated successfully" : "Created successfully");
       router.push("/roles");
+      router.refresh();
     } else {
-      alert("Failed to save role");
+      toast.error("Failed to save role");
       setLoading(false);
     }
   };

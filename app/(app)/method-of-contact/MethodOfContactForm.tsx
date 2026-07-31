@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function MethodOfContactForm({ initialData }: { initialData?: any }) {
   const router = useRouter();
@@ -35,9 +36,11 @@ export default function MethodOfContactForm({ initialData }: { initialData?: any
     });
 
     if (res.ok) {
+      toast.success(initialData ? "Updated successfully" : "Created successfully");
       router.push("/method-of-contact");
+      router.refresh();
     } else {
-      alert("Failed to save methodOfContact");
+      toast.error("Failed to save methodOfContact");
       setLoading(false);
     }
   };

@@ -2,7 +2,33 @@ import { NextResponse } from"next/server";
 import { getServerSession } from"next-auth/next";
 import { authOptions } from"@/lib/auth";
 import { prisma } from"@/lib/prisma";
-import { google } from"googleapis";
+import { google } from "googleapis";
+
+function getMessageBody(payload: any): string {
+  if (!payload) return "";
+  let body = "";
+  if (payload.body && payload.body.data) {
+    body = Buffer.from(payload.body.data, "base64url").toString("utf-8");
+  } else if (payload.parts) {
+    for (const part of payload.parts) {
+      if (part.mimeType === "text/plain" && part.body && part.body.data) {
+        body = Buffer.from(part.body.data, "base64url").toString("utf-8");
+        break;
+      } else if (part.parts) {
+        body = getMessageBody(part);
+      }
+    }
+    if (!body) {
+      for (const part of payload.parts) {
+        if (part.mimeType === "text/html" && part.body && part.body.data) {
+          body = Buffer.from(part.body.data, "base64url").toString("utf-8");
+          break;
+        }
+      }
+    }
+  }
+  return body;
+}
 
 export async function POST(req: Request) {
  try {
@@ -71,13 +97,12 @@ export async function POST(req: Request) {
  continue; // Already processed
  }
 
- // Fetch message details
- const msgDetails = await gmail.users.messages.get({
- userId:"me",
- id: msg.id,
- format:"metadata",
- metadataHeaders: ["From","Subject"],
- });
+    // Fetch message details (full format to get the body)
+    const msgDetails = await gmail.users.messages.get({
+      userId: "me",
+      id: msg.id,
+      format: "full",
+    });
 
  const headers = msgDetails.data.payload?.headers;
  const fromHeader = headers?.find((h) => h.name ==="From")?.value ||"";
@@ -98,28 +123,46 @@ export async function POST(req: Request) {
  });
 
  for (const lead of matchingLeads) {
- // Record the reply activity
- const snippet = msgDetails.data.snippet ?`-"${msgDetails.data.snippet}"`:"";
- await prisma.leadActivity.create({
- data: {
- leadId: lead.id,
- type:"EMAIL_RECEIVED",
- description:`[Msg:${msg.id}] Received reply: ${subject}${snippet}`,
- },
- });
+      // Extract the body
+      let bodyText = getMessageBody(msgDetails.data.payload);
+      if (!bodyText) {
+        bodyText = msgDetails.data.snippet || "No content.";
+      }
 
- // Update lead status to ENGAGED if it's currently NEW or CONTACTED
- if (lead.status ==="NEW"|| lead.status ==="CONTACTED") {
+      // Record the reply activity
+      const snippet = msgDetails.data.snippet ? ` - "${msgDetails.data.snippet}"` : "";
+      await prisma.leadActivity.create({
+        data: {
+          leadId: lead.id,
+          type: "EMAIL_RECEIVED",
+          description: `[Msg:${msg.id}] Received reply: ${subject}${snippet}`,
+        },
+      });
+
+      // Also record the full email in EmailLog as RECEIVED
+      await prisma.emailLog.create({
+        data: {
+          leadId: lead.id,
+          subject: subject,
+          body: bodyText,
+          type: "RECEIVED",
+          sentAt: new Date(Number(msgDetails.data.internalDate || Date.now())),
+        }
+      });
+
+ // Update lead status to CONTACTED if it's currently NEW or Not Contacted
+ if (['NEW', 'Not Contacted'].includes(lead.status)) {
  await prisma.lead.update({
  where: { id: lead.id },
- data: { status:"ENGAGED"},
+ data: { status: "CONTACTED" },
  });
 
  await prisma.leadActivity.create({
  data: {
  leadId: lead.id,
- type:"STATUS_CHANGE",
- description:`Status changed to ENGAGED due to incoming email reply.`,
+ userId: session.user.id,
+ type: "NOTE_ADDED",
+ description: `Status changed to CONTACTED due to incoming email reply.`,
  },
  });
  }
