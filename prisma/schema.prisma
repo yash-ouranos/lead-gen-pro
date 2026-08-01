@@ -173,6 +173,9 @@ model EmailLog {
   openedAt  DateTime?
   openCount Int       @default(0)
   type      String    @default("SENT") // "SENT" or "RECEIVED"
+  messageId String?
+  threadId  String?
+  isRead    Boolean   @default(false)
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 }

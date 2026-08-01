@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Edit, Close, Chat } from "@carbon/icons-react";
+import { Edit, Close, Chat, Search, Menu } from "@carbon/icons-react";
 import { useRouter } from "next/navigation";
 import { formatStatus, sortStatuses } from "@/lib/utils";
 import { transferToMainLeads } from "@/app/(app)/ai-leads/actions";
 import toast from "react-hot-toast";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
-import ComposeForm from "@/app/(app)/email/compose/[leadId]/ComposeForm";
 import EmailHistory from "@/app/components/EmailHistory";
 
 export default function LeadDetailsPanel({ lead, templates = [], onClose }: { lead: any; templates?: any[]; onClose: () => void }) {
@@ -16,29 +15,15 @@ export default function LeadDetailsPanel({ lead, templates = [], onClose }: { le
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [localActivities, setLocalActivities] = useState<any[]>(lead?.activities || []);
-  
+
   const [editedLead, setEditedLead] = useState<any>(lead);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [activeTab, setActiveTab] = useState<"NOTES" | "HISTORY" | "EMAILS">("NOTES");
-  const [isComposing, setIsComposing] = useState(false);
-
-  // Format initial email template
-  const businessName = lead?.businessName || "";
-  const niche = lead?.campaign?.niche || "your industry";
-  const location = lead?.campaign?.location || "your area";
-
-  const initialSubject = `Quick question about ${businessName}`;
-  const initialBody = `Hi there,
-
-I noticed ${businessName} on Google Maps and wanted to reach out. 
-
-We specialize in helping businesses in ${niche} to improve their digital presence and attract more customers in ${location}. 
-
-Would you be open to a quick 5-minute chat next week to see if we'd be a good fit to help you grow?
-
-Best regards,
-[Your Name]`;
+  const [isEmailExpanded, setIsEmailExpanded] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [emailSearchQuery, setEmailSearchQuery] = useState("");
+  const [emailDateFilter, setEmailDateFilter] = useState("");
 
   const [staffs, setStaffs] = useState<any[]>([]);
   const [leadStatuses, setLeadStatuses] = useState<any[]>([]);
@@ -105,7 +90,7 @@ Best regards,
         annualRevenue: editedLead.annualRevenue,
         temperature: editedLead.temperature,
       };
-      
+
       const res = await fetch(`/api/leads/${lead.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -116,7 +101,7 @@ Best regards,
         setEditingField(null);
         router.refresh();
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
     } finally {
       setIsUpdating(false);
@@ -168,23 +153,23 @@ Best regards,
   };
 
   const renderDetailRow = (
-    label: string, 
-    field: string, 
-    valueDisplay: string | null | undefined, 
+    label: string,
+    field: string,
+    valueDisplay: string | null | undefined,
     inputType: "text" | "email" | "date" | "select" | "multiselect" = "text",
     options?: { id: string; value: string; label: string }[]
   ) => {
     const isEditing = editingField === field;
-    
+
     return (
       <div className="flex items-start justify-between py-3 border-b border-gray-100 last:border-0 group">
         <div className="flex items-center gap-2 pr-4 w-full">
           <span className="font-bold text-gray-800 text-sm whitespace-nowrap w-[140px]">{label}:</span>
-          
+
           {isEditing ? (
             <div className="flex-1 flex gap-2 relative">
               {inputType === "text" || inputType === "email" ? (
-                <input 
+                <input
                   type={inputType}
                   value={editedLead[field] || ""}
                   onChange={(e) => handleFieldChange(field, e.target.value)}
@@ -194,7 +179,7 @@ Best regards,
                   className="w-full text-sm px-2 py-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               ) : inputType === "date" ? (
-                <input 
+                <input
                   type="date"
                   value={editedLead[field] ? new Date(editedLead[field]).toISOString().split('T')[0] : ""}
                   onChange={(e) => handleFieldChange(field, e.target.value)}
@@ -204,7 +189,7 @@ Best regards,
                   className="w-full text-sm px-2 py-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               ) : inputType === "select" ? (
-                <select 
+                <select
                   value={editedLead[field] || ""}
                   onChange={(e) => { handleFieldChange(field, e.target.value); setEditingField(null); }}
                   onBlur={() => setEditingField(null)}
@@ -218,7 +203,7 @@ Best regards,
                 </select>
               ) : inputType === "multiselect" ? (
                 <div className="w-full relative z-[60]">
-                  <MultiSelectDropdown 
+                  <MultiSelectDropdown
                     options={[{ id: "B2B", name: "B2B" }, { id: "B2C", name: "B2C" }]}
                     selectedIds={Array.isArray(editedLead[field]) ? editedLead[field] : []}
                     onChange={(ids) => handleFieldChange(field, ids)}
@@ -231,8 +216,8 @@ Best regards,
             <span className="text-gray-600 text-sm flex-1">{valueDisplay || "N/A"}</span>
           )}
         </div>
-        
-        <button 
+
+        <button
           type="button"
           onClick={() => setEditingField(isEditing ? null : field)}
           className="cursor-pointer text-gray-400 hover:text-blue-600 transition-colors shrink-0 mt-0.5"
@@ -245,18 +230,27 @@ Best regards,
 
   return (
     <>
-      <div 
+      <div
         className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 transition-opacity"
         onClick={onClose}
       />
-      
+
       <div className="fixed inset-4 md:inset-10 lg:inset-x-20 xl:inset-x-32 z-50 bg-gray-100 shadow-2xl rounded-lg flex flex-col animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-b shrink-0 rounded-t-lg">
-          <h2 className="text-xl font-bold text-gray-900">Lead Details</h2>
+        <div className="flex items-center justify-between px-6 py-4 bg-white border-b shrink-0">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="cursor-pointer p-2 rounded hover:bg-gray-100 text-gray-500 transition-colors flex items-center justify-center shrink-0"
+              title={isSidebarOpen ? "Hide Details" : "Show Details"}
+            >
+              <Menu size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-gray-900">Lead Details</h2>
+          </div>
           <div className="flex items-center gap-3">
             {lead.isAiLead && (
-              <button 
+              <button
                 onClick={async () => {
                   try {
                     await transferToMainLeads([lead.id]);
@@ -272,7 +266,7 @@ Best regards,
                 Transfer to CRM
               </button>
             )}
-            <button 
+            <button
               onClick={onClose}
               className="cursor-pointer p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
             >
@@ -285,8 +279,9 @@ Best regards,
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden p-4 md:p-6 gap-6">
           
           {/* Left Column - Details */}
-          <div className="w-full md:w-[350px] lg:w-[450px] bg-white border rounded shadow-sm flex flex-col overflow-hidden shrink-0">
-            <div className="flex-1 p-5 overflow-y-auto">
+          {isSidebarOpen && (
+            <div className="w-full md:w-[350px] lg:w-[450px] bg-white border rounded shadow-sm flex flex-col overflow-hidden shrink-0 animate-in slide-in-from-left-2 duration-200">
+              <div className="flex-1 p-5 overflow-y-auto">
               {renderDetailRow("Lead Name", "leadName", editedLead.leadName, "text")}
               {renderDetailRow("Contact Name", "name", editedLead.name, "text")}
               {renderDetailRow("Company Name", "businessName", editedLead.businessName, "text")}
@@ -302,43 +297,44 @@ Best regards,
               {renderDetailRow("Industry", "industry", editedLead.industry, "text")}
               {renderDetailRow("Annual Revenue", "annualRevenue", editedLead.annualRevenue, "text")}
             </div>
-            
+
             {dirty && (
               <div className="p-4 bg-gray-50 border-t shrink-0">
-                <button 
+                <button
                   onClick={handleUpdateLead}
                   disabled={isUpdating}
                   className="cursor-pointer w-full py-2 bg-primary text-white rounded font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isUpdating ? "Updating..." : "Update Details"}
+                  {isUpdating ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             )}
           </div>
+          )}
 
           {/* Right Column - Notes & Activities */}
           <div className="flex-1 bg-white border rounded shadow-sm flex flex-col overflow-hidden">
             <div className="flex border-b border-gray-200 mt-6 px-6 bg-gray-50/50">
               <button
-                onClick={() => setActiveTab('NOTES')}
+                onClick={() => { setActiveTab('NOTES'); setIsEmailExpanded(false); }}
                 className={`cursor-pointer px-4 py-2 font-medium text-[15px] border-b-2 transition-colors ${activeTab === 'NOTES' ? 'border-primary text-primary bg-white rounded-t' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 Notes
               </button>
               <button
-                onClick={() => setActiveTab('EMAILS')}
+                onClick={() => { setActiveTab('EMAILS'); setIsEmailExpanded(false); }}
                 className={`cursor-pointer px-4 py-2 font-medium text-[15px] border-b-2 transition-colors ${activeTab === 'EMAILS' ? 'border-primary text-primary bg-white rounded-t' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 Emails
               </button>
               <button
-                onClick={() => setActiveTab('HISTORY')}
+                onClick={() => { setActiveTab('HISTORY'); setIsEmailExpanded(false); }}
                 className={`cursor-pointer px-4 py-2 font-medium text-[15px] border-b-2 transition-colors ${activeTab === 'HISTORY' ? 'border-primary text-primary bg-white rounded-t' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 Activity History
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-6 bg-white flex flex-col gap-4">
               {activeTab === 'NOTES' && (
                 localActivities.filter((a: any) => a.type === 'NOTE').length === 0 ? (
@@ -364,57 +360,49 @@ Best regards,
 
               {activeTab === 'EMAILS' && (
                 <div className="flex flex-col h-full bg-white relative">
-                  {/* Gmail Style Header */}
-                  <div className="flex items-start justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50 shrink-0">
-                    <div className="flex flex-col gap-0.5">
-                      <h3 className="font-bold text-gray-900 text-lg">{lead.leadName || lead.businessName}</h3>
-                      <p className="text-sm text-gray-600">{lead.email || 'No email provided'} • {lead.phone || 'No phone provided'}</p>
-                      <div className="flex gap-2 text-xs text-blue-600 mt-1">
-                        {lead.website && <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer" className="hover:underline">{lead.website}</a>}
-                        {lead.address && <span className="text-gray-400">• {lead.address}</span>}
+                  {!isEmailExpanded && (
+                    <div className="flex items-center justify-between border-b border-gray-100 px-6 py-3 bg-gray-50/50 shrink-0">
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search emails..."
+                            value={emailSearchQuery}
+                            onChange={(e) => setEmailSearchQuery(e.target.value)}
+                            className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-48"
+                          />
+                        </div>
+                        <input
+                          type="date"
+                          value={emailDateFilter}
+                          onChange={(e) => setEmailDateFilter(e.target.value)}
+                          className="px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-600"
+                        />
                       </div>
+                      <button
+                        onClick={() => {
+                          onClose();
+                          router.push(`/email/compose/${lead.id}`);
+                        }}
+                        className="cursor-pointer px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm shrink-0"
+                      >
+                        Compose Email
+                      </button>
                     </div>
-                    <div>
-                      {isComposing ? (
-                        <button 
-                          onClick={() => setIsComposing(false)}
-                          className="cursor-pointer px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-                        >
-                          Back to Inbox
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={() => setIsComposing(true)}
-                          className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                        >
-                          Compose Email
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Body Area */}
                   <div className="flex-1 overflow-y-auto">
-                    {isComposing ? (
-                      <div className="animate-in slide-in-from-top-2 duration-200">
-                        <ComposeForm 
-                          leadId={lead.id} 
-                          leadData={{ businessName: lead.businessName, niche: lead.campaign?.niche || "", location: [lead.city, lead.state, lead.country].filter(Boolean).join(", "), website: lead.website || "", email: lead.email || "No email" }}
-                          templates={templates}
-                          initialSubject={initialSubject} 
-                          initialBody={initialBody}
-                          onSuccess={() => {
-                            toast.success("Email sent successfully!");
-                            setIsComposing(false);
-                            router.refresh();
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="animate-in fade-in duration-200">
-                        <EmailHistory emailLogs={lead.emailLogs || []} />
-                      </div>
-                    )}
+                    <div className="animate-in fade-in duration-200">
+                      <EmailHistory
+                        emailLogs={lead.emailLogs || []}
+                        onExpandChange={setIsEmailExpanded}
+                        searchQuery={emailSearchQuery}
+                        dateFilter={emailDateFilter}
+                        leadId={lead.id}
+                      />
+                    </div>
                   </div>
                 </div>
               )}

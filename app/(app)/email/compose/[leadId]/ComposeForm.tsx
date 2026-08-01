@@ -80,7 +80,7 @@ export default function ComposeForm({ leadId, leadData, templates, initialSubjec
         setBody(initialBody);
         setIsSubmitting(false);
       } else {
-        router.push("/dashboard");
+        router.back();
       }
     }
   }

@@ -350,15 +350,27 @@ export default function LeadTable({
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
+                          router.push(`/email/compose/${lead.id}`);
+                        }}
+                        className="cursor-pointer text-blue-600 hover:text-blue-700 transition-colors"
+                        title="Compose Email"
+                      >
+                        <Email size={16} />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
                           router.push(`/leads/${lead.id}/edit`);
                         }}
                         className="cursor-pointer text-green-600 hover:text-green-700 transition-colors"
+                        title="Edit Lead"
                       >
                         <Edit size={16} />
                       </button>
                       <button 
                         onClick={(e) => promptDelete(lead.id, e)}
                         className="cursor-pointer text-red-500 hover:text-red-700 transition-colors"
+                        title="Delete Lead"
                       >
                         <TrashCan size={16} />
                       </button>

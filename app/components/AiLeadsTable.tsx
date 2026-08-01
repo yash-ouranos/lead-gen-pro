@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { transferToMainLeads, deleteAiLeads } from "@/app/(app)/ai-leads/actions";
 import LeadDetailsPanel from "./LeadDetailsPanel";
-import { Launch, TrashCan, Checkmark, Search, Add } from "@carbon/icons-react";
+import { Launch, TrashCan, Checkmark, Search, Add, Email } from "@carbon/icons-react";
 import toast from "react-hot-toast";
 
 export default function AiLeadsTable({ leads, templates = [] }: { leads: any[]; templates?: any[] }) {
@@ -175,9 +175,10 @@ export default function AiLeadsTable({ leads, templates = [] }: { leads: any[]; 
                       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <Link
                           href={`/email/compose/${lead.id}`}
-                          className="text-blue-500 hover:text-blue-600 text-sm font-medium mr-3 cursor-pointer"
+                          className="text-blue-600 hover:text-blue-700 transition-colors inline-block cursor-pointer mr-3"
+                          title="Compose Email"
                         >
-                          Email
+                          <Email size={16} />
                         </Link>
                       </td>
                     </tr>

@@ -1,10 +1,217 @@
 "use client";
 
-import { useState } from "react";
-import { Email, Time, View, User } from "@carbon/icons-react";
+import { useState, useEffect } from "react";
+import { Email, Time, View, User, ChevronLeft, SendAlt, Reply } from "@carbon/icons-react";
+import { sendEmail, toggleEmailReadStatus } from "@/app/(app)/email/compose/[leadId]/actions";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
-export default function EmailHistory({ emailLogs }: { emailLogs: any[] }) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+const CKEditor = dynamic(() => import("@/app/components/CKEditorWrapper"), { ssr: false });
+
+function cleanEmailBody(body: string, isHtml: boolean) {
+  if (!body) return "";
+  let cleaned = body;
+
+  if (isHtml) {
+    // For HTML, we let CSS handle hiding the `.gmail_quote` elements to avoid breaking HTML structure
+    // But we still strip the "On [date] wrote:" text that sometimes precedes the quote
+    cleaned = cleaned.replace(/<div dir="ltr">On\s+.*?wrote:<br><\/div>/gi, '');
+  } else {
+    // Remove plain text quote blocks starting with "On ... wrote:"
+    const quotePattern = /(\r?\n)*On\s+.*?wrote:\s*[\s\S]*$/i;
+    cleaned = cleaned.replace(quotePattern, '');
+  }
+  
+  return cleaned.trim();
+}
+
+function ThreadMessage({ log, isLatest, isSent }: { log: any, isLatest: boolean, isSent: boolean }) {
+  const [isCollapsed, setIsCollapsed] = useState(!isLatest);
+  const displayBody = log.body?.trim() ? log.body : "No content available.";
+  const plainTextBody = displayBody.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\n/g, ' ').trim();
+  const snippet = plainTextBody.substring(0, 100) + (plainTextBody.length > 100 ? '...' : '');
+  const isHtml = /<\/?(html|body|div|p|br|table|strong|em|span|b|i)[>\s]/i.test(log.body || '');
+
+  return (
+    <div className={`flex flex-col border border-gray-100 rounded-lg overflow-hidden shadow-sm transition-all duration-200 ${isCollapsed ? 'bg-white' : ''}`}>
+      <div 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className={`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-100 transition-colors ${!isCollapsed ? 'bg-gray-50/50 border-b border-gray-100' : 'bg-white'}`}
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center ${isSent ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
+            <User size={16} />
+          </div>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h4 className="font-semibold text-gray-900 text-sm shrink-0">
+              {isSent ? "Me" : "Lead"} 
+            </h4>
+            {isCollapsed && (
+              <span className="text-sm text-gray-500 truncate">- {snippet}</span>
+            )}
+          </div>
+        </div>
+        <div className="text-xs text-gray-500 flex items-center gap-1.5 shrink-0 ml-4">
+          {new Date(log.sentAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+        </div>
+      </div>
+      
+      {!isCollapsed && (
+        <div className="p-4 text-sm text-gray-800 font-sans leading-relaxed overflow-x-auto bg-white animate-in fade-in duration-200">
+          <div className="mb-4">
+            <p className="text-xs text-gray-500">to {isSent ? "Lead" : "Me"}</p>
+          </div>
+          {isHtml ? (
+            <div dangerouslySetInnerHTML={{ __html: cleanEmailBody(displayBody, true) }} />
+          ) : (
+            <div className="whitespace-pre-wrap">{cleanEmailBody(displayBody, false)}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function EmailHistory({ 
+  emailLogs,
+  onExpandChange,
+  searchQuery,
+  dateFilter,
+  leadId
+}: { 
+  emailLogs: any[],
+  onExpandChange?: (isExpanded: boolean) => void,
+  searchQuery?: string,
+  dateFilter?: string,
+  leadId?: string
+}) {
+  const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [isReplying, setIsReplying] = useState(false);
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (onExpandChange) {
+      onExpandChange(expandedThreadId !== null);
+      if (expandedThreadId === null) {
+        setIsReplying(false);
+        setReplyText("");
+      }
+    }
+  }, [expandedThreadId, onExpandChange]);
+
+  const handleToggleReadStatus = async (logId: string, currentStatus: boolean, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      const res = await toggleEmailReadStatus(logId, !currentStatus);
+      if (res?.error) {
+        toast.error(res.error);
+      } else {
+        router.refresh();
+      }
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  useEffect(() => {
+    if (expandedThreadId) {
+      const thread = threads.find((t) => t.id === expandedThreadId);
+      if (thread) {
+        const latestLog = thread.logs[0];
+        if (latestLog.type === "RECEIVED" && !latestLog.isRead) {
+          handleToggleReadStatus(latestLog.id, false);
+        }
+      }
+    }
+  }, [expandedThreadId]);
+
+  let filteredLogs = [...emailLogs];
+  
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filteredLogs = filteredLogs.filter((log: any) => {
+      const subjectMatch = log.subject?.toLowerCase().includes(q);
+      const plainTextBody = (log.body || '').replace(/<[^>]*>?/gm, ' ').toLowerCase();
+      const bodyMatch = plainTextBody.includes(q);
+      return subjectMatch || bodyMatch;
+    });
+  }
+
+  if (dateFilter) {
+    filteredLogs = filteredLogs.filter((log: any) => 
+      new Date(log.sentAt).toISOString().split('T')[0] === dateFilter
+    );
+  }
+
+  // Normalize subject for grouping legacy emails without threadId
+  const normalizeSubject = (subject: string) => {
+    return (subject || "").replace(/^(re|fwd|fw):\s*/gi, "").trim().toLowerCase();
+  };
+  const isReply = (subject: string) => /^(re|fwd|fw):\s*/i.test(subject || "");
+
+  // Step 1: Initial grouping based on Gmail threadId or legacy subject
+  const threadIdToGroup = new Map<string, any[]>();
+  const legacySubjectToGroup = new Map<string, any[]>();
+  
+  filteredLogs.forEach((log) => {
+    if (log.threadId) {
+      if (!threadIdToGroup.has(log.threadId)) {
+        threadIdToGroup.set(log.threadId, []);
+      }
+      threadIdToGroup.get(log.threadId)!.push(log);
+    } else {
+      const normSubj = normalizeSubject(log.subject);
+      if (!legacySubjectToGroup.has(normSubj)) {
+        legacySubjectToGroup.set(normSubj, []);
+      }
+      legacySubjectToGroup.get(normSubj)!.push(log);
+    }
+  });
+
+  const allGroups = [
+    ...Array.from(threadIdToGroup.values()),
+    ...Array.from(legacySubjectToGroup.values())
+  ];
+
+  // Step 2: Separate into root threads (contain original emails) and orphan threads (only replies)
+  const rootGroups: any[][] = [];
+  const orphanGroups: any[][] = [];
+  
+  allGroups.forEach(group => {
+    const hasRoot = group.some(log => !isReply(log.subject));
+    if (hasRoot) {
+      rootGroups.push(group);
+    } else {
+      orphanGroups.push(group);
+    }
+  });
+
+  // Step 3: Merge orphan reply threads into their corresponding root thread
+  orphanGroups.forEach(orphan => {
+    const normSubj = normalizeSubject(orphan[0].subject);
+    const matchingRoot = rootGroups.find(root => normalizeSubject(root[0].subject) === normSubj);
+    if (matchingRoot) {
+      matchingRoot.push(...orphan);
+    } else {
+      rootGroups.push(orphan);
+    }
+  });
+
+  // Convert to array and sort by most recent email
+  const threads = rootGroups.map((logs, index) => {
+    const id = logs.find(l => l.threadId)?.threadId || logs[0].id || String(index);
+    return {
+      id,
+      logs: logs.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime())
+    };
+  }).sort((a, b) => {
+    const latestA = new Date(a.logs[0].sentAt).getTime();
+    const latestB = new Date(b.logs[0].sentAt).getTime();
+    return latestB - latestA;
+  });
 
   if (!emailLogs || emailLogs.length === 0) {
     return (
@@ -20,96 +227,189 @@ export default function EmailHistory({ emailLogs }: { emailLogs: any[] }) {
     );
   }
 
-  // Sort logs by sentAt descending (latest first)
-  const sortedLogs = [...emailLogs].sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+  if (expandedThreadId) {
+    const thread = threads.find((t) => t.id === expandedThreadId);
+    if (!thread) {
+      setExpandedThreadId(null);
+      return null;
+    }
+    
+    // Sort chronologically (oldest first) for reading flow
+    const chronologicalLogs = [...thread.logs].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
+    const displaySubject = thread.logs[0].subject?.replace(/^(re|fwd|fw):\s*/gi, "").trim() || "No Subject";
+    // We'll reply to the latest log in the thread to maintain threading
+    const latestLog = thread.logs[0];
+    
+    return (
+      <div className="flex flex-col bg-white">
+        <style>{`
+          .gmail_quote { display: none !important; }
+        `}</style>
+        <div className="flex items-center gap-2 border-b border-gray-100 px-6 py-4 bg-white shrink-0 sticky top-0 z-10">
+          <button 
+            onClick={() => setExpandedThreadId(null)}
+            className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+          >
+            <ChevronLeft size={16} />
+            Back to Emails
+          </button>
+          <div className="ml-auto">
+            {latestLog.type === "RECEIVED" && (
+              <button 
+                onClick={(e) => handleToggleReadStatus(latestLog.id, latestLog.isRead, e)}
+                className="text-xs font-semibold px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+              >
+                Mark as {latestLog.isRead ? "Unread" : "Read"}
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="mb-6 border-b border-gray-100 pb-4">
+            <h3 className="text-xl font-bold text-gray-900">{displaySubject}</h3>
+          </div>
+
+          <div className="space-y-3">
+            {chronologicalLogs.map((log: any, index: number) => {
+              const isSent = log.type === "SENT";
+              const isLatest = index === chronologicalLogs.length - 1;
+              return (
+                <ThreadMessage 
+                  key={log.id || index} 
+                  log={log} 
+                  isLatest={isLatest} 
+                  isSent={isSent} 
+                />
+              );
+            })}
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-gray-100 flex flex-col gap-4">
+            {!isReplying ? (
+              <button
+                onClick={() => setIsReplying(true)}
+                className="flex items-center gap-2 self-start px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-md font-medium transition-colors border border-gray-200"
+              >
+                <Reply size={16} />
+                Reply
+              </button>
+            ) : (
+              <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-200 border border-gray-200 rounded-md p-1 shadow-sm">
+                <CKEditor
+                  value={replyText}
+                  onChange={setReplyText}
+                  placeholder="Type your reply here..."
+                />
+                <div className="flex items-center gap-2 self-end">
+                  <button
+                    onClick={() => {
+                      setIsReplying(false);
+                      setReplyText("");
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                    disabled={isSubmittingReply}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!replyText.trim() || !leadId) return;
+                      setIsSubmittingReply(true);
+                      try {
+                        const replySubject = latestLog.subject.toLowerCase().startsWith('re:') ? latestLog.subject : `Re: ${latestLog.subject}`;
+                        const result = await sendEmail(leadId, replySubject, replyText, latestLog.id);
+                        if (result.error) {
+                          toast.error(result.error);
+                        } else {
+                          toast.success("Reply sent successfully");
+                          setIsReplying(false);
+                          setReplyText("");
+                          // Ideally refresh data here
+                        }
+                      } catch (e) {
+                        toast.error("Failed to send reply");
+                      } finally {
+                        setIsSubmittingReply(false);
+                      }
+                    }}
+                    disabled={!replyText.trim() || isSubmittingReply}
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                  >
+                    <SendAlt size={16} />
+                    {isSubmittingReply ? "Sending..." : "Send Reply"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col border-t border-gray-200">
-      {sortedLogs.map((log: any) => {
-        const isSent = log.type === "SENT";
-        const isUnread = isSent ? log.openCount === 0 : false; // Treat unread sent as bold (or maybe we shouldn't? Let's just make everything normal unless we track inbound unread)
-        // Actually, let's just make SENT unread bold, and RECEIVED unread bold (we don't track inbound unread yet, so let's default inbound to bold to simulate it needing attention)
-        const isUnreadDisplay = isSent ? log.openCount === 0 : true; 
-        const isExpanded = expandedId === log.id;
+      {threads.map((thread) => {
+        const latestLog = thread.logs[0];
+        const isSent = latestLog.type === "SENT";
+        const isUnreadDisplay = isSent ? latestLog.openCount === 0 : !latestLog.isRead; 
+        const threadCount = thread.logs.length;
         
-        // Snippet generation
-        const snippet = (log.body || "").replace(/\n/g, ' ').substring(0, 100) + ((log.body || "").length > 100 ? '...' : '');
-        const senderText = isSent ? "Me" : "Lead";
+        const displaySubject = latestLog.subject?.trim() ? latestLog.subject : "No Subject";
+        const displayBody = latestLog.body?.trim() ? latestLog.body : "No content available.";
+        
+        // Snippet generation (strip HTML tags)
+        const plainTextBody = displayBody.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\n/g, ' ').trim();
+        const snippet = plainTextBody.substring(0, 100) + (plainTextBody.length > 100 ? '...' : '');
+        
+        // Determine senders display
+        const senderTypes = Array.from(new Set(thread.logs.map(l => l.type === "SENT" ? "Me" : "Lead")));
+        const senderText = senderTypes.join(", ");
 
         return (
-          <div key={log.id} className="border-b border-gray-200 flex flex-col">
+          <div key={thread.id} className="border-b border-gray-200 flex flex-col">
             {/* List Row */}
             <div 
-              onClick={() => setExpandedId(isExpanded ? null : log.id)}
+              onClick={() => setExpandedThreadId(thread.id)}
               className={`flex items-center gap-4 px-6 py-3 cursor-pointer transition-colors ${
-                isUnreadDisplay ? 'bg-white' : 'bg-gray-50/50'
+                isUnreadDisplay && !isSent ? 'bg-blue-50/30' : isUnreadDisplay ? 'bg-white' : 'bg-gray-50/50'
               } hover:bg-gray-100 shadow-[inset_0_-1px_0_rgba(0,0,0,0.02)]`}
             >
-              <div className="w-24 shrink-0 flex items-center gap-2">
-                <span className={`text-sm ${isUnreadDisplay ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
+              <div className="w-32 shrink-0 flex items-center gap-2">
+                {!isSent && isUnreadDisplay && (
+                  <div className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                )}
+                <span className={`text-sm truncate ${isUnreadDisplay ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
                   {senderText}
+                  {threadCount > 1 && <span className="ml-1 text-gray-500 font-normal">({threadCount})</span>}
                 </span>
               </div>
               
-              <div className="flex-1 min-w-0 flex items-center gap-2">
+              <div className="flex-1 min-w-0 flex items-center gap-2 pr-4">
                 <span className={`text-sm truncate ${isUnreadDisplay ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}>
-                  {log.subject}
+                  {displaySubject}
                 </span>
                 <span className="text-sm text-gray-500 truncate">- {snippet}</span>
               </div>
               
-              <div className="w-24 shrink-0 text-right">
+              <div className="w-20 shrink-0 flex items-center justify-end text-xs mr-4">
+                {isSent ? (
+                  latestLog.openCount > 0 ? (
+                    <span className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded font-medium border border-blue-100" title={`Opened ${latestLog.openCount} times`}>
+                      <View size={12} /> {latestLog.openCount}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-[10px] uppercase tracking-wider font-semibold">Unread</span>
+                  )
+                ) : null}
+              </div>
+
+              <div className="w-20 shrink-0 text-right">
                 <span className={`text-xs ${isUnreadDisplay ? 'font-bold text-gray-900' : 'font-medium text-gray-500'}`}>
-                  {new Date(log.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {new Date(latestLog.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
               </div>
             </div>
-
-            {/* Expanded View */}
-            {isExpanded && (
-              <div className="p-6 bg-white border-t border-gray-100 shadow-inner">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSent ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                      <User size={20} />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                        {isSent ? "Me" : "Lead"} 
-                      </h4>
-                      <p className="text-xs text-gray-500">to {isSent ? "Lead" : "Me"}</p>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                    <Time size={14} />
-                    {new Date(log.sentAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">{log.subject}</h3>
-                  <div className="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed">
-                    {log.body}
-                  </div>
-                </div>
-
-                {isSent && (
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs">
-                    {log.openCount > 0 ? (
-                      <span className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full font-medium border border-blue-100">
-                        <View size={14} />
-                        Opened {log.openCount} {log.openCount === 1 ? 'time' : 'times'}
-                        {log.openedAt && ` (Last: ${new Date(log.openedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })})`}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full font-medium border border-gray-200">
-                        <View size={14} /> Unread
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         );
       })}

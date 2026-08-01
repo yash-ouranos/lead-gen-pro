@@ -4,8 +4,9 @@ import { getServerSession } from"next-auth";
 import { authOptions } from"@/lib/auth";
 import { prisma } from"@/lib/prisma";
 import { google } from"googleapis";
+import { revalidatePath } from "next/cache";
 
-export async function sendEmail(leadId: string, subject: string, body: string) {
+export async function sendEmail(leadId: string, subject: string, body: string, replyToLogId?: string) {
  const session = await getServerSession(authOptions);
  if (!session?.user?.id || !session?.user?.email) return { error:"Unauthorized"};
 
@@ -43,41 +44,70 @@ export async function sendEmail(leadId: string, subject: string, body: string) {
  // We already have HTML from CKEditor, just append tracking pixel
  const htmlBody = body +`<br><br><img src="${trackingPixelUrl}"width="1"height="1"alt=""/>`;
 
- // Construct raw email RFC 2822 formatted string
- const messageParts = [
+  // Find the original email log if replying
+  let originalLog = null;
+  if (replyToLogId) {
+    originalLog = await prisma.emailLog.findUnique({ where: { id: replyToLogId } });
+  }
+
+  // Construct raw email RFC 2822 formatted string
+  const messageParts = [
 `From: ${session.user.email}`,
 `To: yash.kevadiya@ouranostech.com`, // TEST OVERRIDE
 `Subject: =?utf-8?B?${Buffer.from(subject).toString("base64")}?=`,
 "MIME-Version: 1.0",
-"Content-Type: text/html; charset=utf-8",
-"",
- htmlBody,
- ];
- const message = messageParts.join("\n");
- const encodedMessage = Buffer.from(message)
- .toString("base64")
- .replace(/\+/g,"-")
- .replace(/\//g,"_")
- .replace(/=+$/,"");
+"Content-Type: text/html; charset=utf-8"
+  ];
 
- await gmail.users.messages.send({
- userId:"me",
- requestBody: {
- raw: encodedMessage,
- },
- });
+  if (originalLog?.messageId) {
+    messageParts.push(`In-Reply-To: ${originalLog.messageId}`);
+    messageParts.push(`References: ${originalLog.messageId}`);
+  }
+
+  messageParts.push("");
+  messageParts.push(htmlBody);
+
+  const message = messageParts.join("\n");
+  const encodedMessage = Buffer.from(message)
+  .toString("base64")
+  .replace(/\+/g,"-")
+  .replace(/\//g,"_")
+  .replace(/=+$/,"");
+
+  const requestBody: any = { raw: encodedMessage };
+  if (originalLog?.threadId) {
+    requestBody.threadId = originalLog.threadId;
+  }
+
+  const sendResponse = await gmail.users.messages.send({
+    userId:"me",
+    requestBody
+  });
+
+  // Update the email log with messageId and threadId from Gmail
+  if (sendResponse.data) {
+    await prisma.emailLog.update({
+      where: { id: emailLog.id },
+      data: {
+        messageId: sendResponse.data.id ? `<${sendResponse.data.id}@mail.gmail.com>` : undefined,
+        threadId: sendResponse.data.threadId || undefined,
+      }
+    });
+  }
 
  const activitiesToCreate = [
  {
  type:"EMAIL_SENT",
- description:`Email sent:"${subject}"`
+ description:`Email sent:"${subject}"`,
+ userId: session.user.id
  }
  ];
 
  if (lead.status !=="CONTACTED") {
  activitiesToCreate.push({
  type:"STATUS_CHANGE",
- description:`Status changed from ${lead.status} to CONTACTED`
+ description:`Status changed from ${lead.status} to CONTACTED`,
+ userId: session.user.id
  });
  }
 
@@ -91,9 +121,31 @@ export async function sendEmail(leadId: string, subject: string, body: string) {
  }
  });
 
+ revalidatePath("/leads");
+ revalidatePath("/ai-leads");
+ revalidatePath("/dashboard");
+ revalidatePath(`/email/compose/${leadId}`);
+
  return { success: true };
  } catch (error: any) {
  console.error("Email send error:", error);
  return { error: error.message ||"Failed to send email"};
  }
+}
+
+export async function toggleEmailReadStatus(logId: string, isRead: boolean) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  try {
+    await prisma.emailLog.update({
+      where: { id: logId },
+      data: { isRead }
+    });
+    // Optional: revalidate path if needed, though client side state might handle it
+    return { success: true };
+  } catch (error) {
+    console.error("Error toggling read status:", error);
+    return { error: "Failed to update read status" };
+  }
 }

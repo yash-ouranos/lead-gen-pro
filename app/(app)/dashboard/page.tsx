@@ -42,7 +42,7 @@ export default async function DashboardPage() {
         select: { location: true, niche: true }
       },
       emailLogs: {
-        select: { openCount: true, openedAt: true, sentAt: true }
+        orderBy: { sentAt: 'desc' }
       },
       activities: {
         include: { user: { select: { name: true } } },

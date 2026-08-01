@@ -6,28 +6,37 @@ import { google } from "googleapis";
 
 function getMessageBody(payload: any): string {
   if (!payload) return "";
-  let body = "";
+  
   if (payload.body && payload.body.data) {
-    body = Buffer.from(payload.body.data, "base64url").toString("utf-8");
-  } else if (payload.parts) {
-    for (const part of payload.parts) {
-      if (part.mimeType === "text/plain" && part.body && part.body.data) {
-        body = Buffer.from(part.body.data, "base64url").toString("utf-8");
-        break;
-      } else if (part.parts) {
-        body = getMessageBody(part);
-      }
-    }
-    if (!body) {
-      for (const part of payload.parts) {
+    return Buffer.from(payload.body.data, "base64url").toString("utf-8");
+  }
+  
+  if (payload.parts) {
+    let htmlPart: any = null;
+    let textPart: any = null;
+
+    const findParts = (parts: any[]) => {
+      for (const part of parts) {
         if (part.mimeType === "text/html" && part.body && part.body.data) {
-          body = Buffer.from(part.body.data, "base64url").toString("utf-8");
-          break;
+          htmlPart = part;
+        } else if (part.mimeType === "text/plain" && part.body && part.body.data) {
+          textPart = part;
+        } else if (part.parts) {
+          findParts(part.parts);
         }
       }
+    };
+
+    findParts(payload.parts);
+
+    if (htmlPart) {
+      return Buffer.from(htmlPart.body.data, "base64url").toString("utf-8");
+    } else if (textPart) {
+      return Buffer.from(textPart.body.data, "base64url").toString("utf-8");
     }
   }
-  return body;
+  
+  return "";
 }
 
 export async function POST(req: Request) {
@@ -53,7 +62,10 @@ export async function POST(req: Request) {
  }
 
  // Initialize Gmail API client
- const oauth2Client = new google.auth.OAuth2();
+ const oauth2Client = new google.auth.OAuth2(
+   process.env.GOOGLE_CLIENT_ID,
+   process.env.GOOGLE_CLIENT_SECRET
+ );
  oauth2Client.setCredentials({
  access_token: account.access_token,
  refresh_token: account.refresh_token,
@@ -66,7 +78,7 @@ export async function POST(req: Request) {
  try {
  response = await gmail.users.messages.list({
  userId:"me",
- q:"in:inbox -from:me",
+ q:"in:inbox",
  maxResults: 20,
  });
  } catch (err: any) {
@@ -104,25 +116,53 @@ export async function POST(req: Request) {
       format: "full",
     });
 
- const headers = msgDetails.data.payload?.headers;
- const fromHeader = headers?.find((h) => h.name ==="From")?.value ||"";
- const subject = headers?.find((h) => h.name ==="Subject")?.value ||"No Subject";
+ const headers = msgDetails.data.payload?.headers || [];
+ const fromHeader = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "";
+ const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
+ const messageId = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value || "";
+ const threadId = msgDetails.data.threadId || null;
  
  // Extract email address from format"Name <email@domain.com>"or"email@domain.com"
  const emailMatch = fromHeader.match(/<([^>]+)>/);
  const senderEmail = emailMatch ? emailMatch[1].toLowerCase() : fromHeader.trim().toLowerCase();
 
- if (!senderEmail) continue;
+  if (!senderEmail) continue;
 
- // Find leads with this email for the current user
- const matchingLeads = await prisma.lead.findMany({
- where: {
- email: { equals: senderEmail, mode:"insensitive"},
- campaign: { userId: session.user.tenantId },
- },
- });
+  // 1. Try to find the lead by checking if we already have an EmailLog for this thread
+  let matchingLeads: any[] = [];
+  if (threadId) {
+    const existingLog = await prisma.emailLog.findFirst({
+      where: { threadId: threadId },
+      include: { lead: true }
+    });
+    
+    // Make sure the lead belongs to the current user's tenant
+    if (existingLog && existingLog.lead) {
+      const leadCampaign = await prisma.campaign.findUnique({
+        where: { id: existingLog.lead.campaignId }
+      });
+      if (leadCampaign && leadCampaign.userId === session.user.tenantId) {
+        matchingLeads.push(existingLog.lead);
+      }
+    }
+  }
 
- for (const lead of matchingLeads) {
+  // 2. If no lead found by threadId, fallback to matching by sender email
+  if (matchingLeads.length === 0) {
+    matchingLeads = await prisma.lead.findMany({
+      where: {
+        email: { equals: senderEmail, mode: "insensitive" },
+        campaign: { userId: session.user.tenantId },
+      },
+    });
+  }
+
+  // To prevent processing the same lead multiple times if duplicates exist
+  const processedLeadIds = new Set();
+
+  for (const lead of matchingLeads) {
+      if (processedLeadIds.has(lead.id)) continue;
+      processedLeadIds.add(lead.id);
       // Extract the body
       let bodyText = getMessageBody(msgDetails.data.payload);
       if (!bodyText) {
@@ -139,13 +179,14 @@ export async function POST(req: Request) {
         },
       });
 
-      // Also record the full email in EmailLog as RECEIVED
       await prisma.emailLog.create({
         data: {
           leadId: lead.id,
           subject: subject,
           body: bodyText,
           type: "RECEIVED",
+          messageId: messageId,
+          threadId: threadId,
           sentAt: new Date(Number(msgDetails.data.internalDate || Date.now())),
         }
       });
