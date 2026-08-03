@@ -260,8 +260,8 @@ export default function EmailHistory({
     // Sort chronologically (oldest first) for reading flow
     const chronologicalLogs = [...thread.logs].sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime());
     const displaySubject = thread.logs[0].subject?.replace(/^(re|fwd|fw):\s*/gi, "").trim() || "No Subject";
-    // We'll reply to the latest log in the thread to maintain threading
     const latestLog = thread.logs[0];
+    const latestReceivedLog = thread.logs.find(log => log.type === "RECEIVED");
     
     return (
       <div className="flex flex-col bg-white">
@@ -277,12 +277,12 @@ export default function EmailHistory({
             Back to Emails
           </button>
           <div className="ml-auto">
-            {latestLog.type === "RECEIVED" && (
+            {latestReceivedLog && (
               <button 
-                onClick={(e) => handleToggleReadStatus(latestLog.id, latestLog.isRead, e)}
+                onClick={(e) => handleToggleReadStatus(latestReceivedLog.id, latestReceivedLog.isRead, e)}
                 className="text-xs font-semibold px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
               >
-                Mark as {latestLog.isRead ? "Unread" : "Read"}
+                Mark as {latestReceivedLog.isRead ? "Unread" : "Read"}
               </button>
             )}
           </div>
