@@ -7,6 +7,16 @@ export default async function AiLeadsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.tenantId) return null;
 
+  const { hasPermission } = await import("@/lib/permissions");
+  if (!hasPermission(session, "VIEW_AI_LEADS")) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+        <p>You do not have permission to view AI Leads.</p>
+      </div>
+    );
+  }
+
   const aiLeads = await prisma.lead.findMany({
     where: { 
       userId: session.user.tenantId,

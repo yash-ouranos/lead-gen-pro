@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('./lib/prisma');
 
 async function main() {
   const users = await prisma.user.findMany();
@@ -10,14 +9,28 @@ async function main() {
 
   const defaultMethodOfContacts = ["Email", "Phone", "WhatsApp"];
   const defaultLeadStatuses = [
+    // Top of Funnel
     "NEW",
     "OPEN",
+    "QUALIFIED",
+    "UNQUALIFIED",
+    // Outreach
     "CONTACTED",
+    "FOLLOW_UP",
+    "NURTURE",
+    // Engagement
     "ENGAGED",
     "MEETING_BOOKED",
+    "DEMO_SCHEDULED",
+    // Conversion
+    "PROPOSAL_SENT",
+    "NEGOTIATION",
+    // Resolution
     "CLOSED_WON",
-    "HOLD",
     "CLOSED_LOST",
+    "HOLD",
+    "BAD_TIMING",
+    "REJECTED"
   ];
 
   let addedMoc = 0;

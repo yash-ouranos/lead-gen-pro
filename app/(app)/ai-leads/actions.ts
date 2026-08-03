@@ -4,10 +4,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { hasPermission } from "@/lib/permissions";
 
 export async function transferToMainLeads(leadIds: string[]) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.tenantId) return { error: "Unauthorized" };
+  if (!hasPermission(session, "MANAGE_AI_LEADS")) return { error: "Forbidden" };
 
   try {
     await prisma.lead.updateMany({
@@ -32,6 +34,7 @@ export async function transferToMainLeads(leadIds: string[]) {
 export async function deleteAiLeads(leadIds: string[]) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.tenantId) return { error: "Unauthorized" };
+  if (!hasPermission(session, "MANAGE_AI_LEADS")) return { error: "Forbidden" };
 
   try {
     await prisma.lead.deleteMany({

@@ -26,7 +26,8 @@ export default function SearchableCreatableSelect({
   placeholder = "Select...",
   className = "",
   disabled = false,
-}: SearchableCreatableSelectProps) {
+  valueKey = "name",
+}: SearchableCreatableSelectProps & { valueKey?: "id" | "name" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -55,7 +56,6 @@ export default function SearchableCreatableSelect({
     setIsCreating(true);
     try {
       await onCreate(search.trim());
-      onChange(search.trim());
       setIsOpen(false);
       setSearch("");
     } catch (e) {
@@ -64,6 +64,9 @@ export default function SearchableCreatableSelect({
       setIsCreating(false);
     }
   };
+
+  const selectedOption = options.find(opt => opt[valueKey] === value);
+  const displayValue = selectedOption ? selectedOption.name : value;
 
   return (
     <div className={`relative ${className}`} ref={wrapperRef}>
@@ -79,7 +82,7 @@ export default function SearchableCreatableSelect({
         }}
       >
         <span className={value ? "text-foreground" : "text-muted-foreground"}>
-          {value || placeholder}
+          {displayValue || placeholder}
         </span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </div>
@@ -102,9 +105,9 @@ export default function SearchableCreatableSelect({
               filteredOptions.map((opt) => (
                 <li 
                   key={opt.id}
-                  className={`px-4 py-2 text-sm cursor-pointer hover:bg-muted ${value === opt.name ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}
+                  className={`px-4 py-2 text-sm cursor-pointer hover:bg-muted ${value === opt[valueKey] ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'}`}
                   onClick={() => {
-                    onChange(opt.name);
+                    onChange(opt[valueKey]);
                     setIsOpen(false);
                     setSearch("");
                   }}

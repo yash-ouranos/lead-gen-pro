@@ -7,9 +7,11 @@ import { transferToMainLeads, deleteAiLeads } from "@/app/(app)/ai-leads/actions
 import LeadDetailsPanel from "./LeadDetailsPanel";
 import { Launch, TrashCan, Checkmark, Search, Add, Email } from "@carbon/icons-react";
 import toast from "react-hot-toast";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 export default function AiLeadsTable({ leads, templates = [] }: { leads: any[]; templates?: any[] }) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,7 +87,7 @@ export default function AiLeadsTable({ leads, templates = [] }: { leads: any[]; 
               className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-md text-sm text-foreground focus:outline-none focus:border-primary placeholder:text-muted-foreground transition-colors"
             />
           </div>
-          {selectedLeadIds.length > 0 && (
+          {selectedLeadIds.length > 0 && hasPermission("MANAGE_AI_LEADS") && (
             <>
               <button
                 onClick={handleBulkDelete}

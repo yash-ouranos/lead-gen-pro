@@ -90,7 +90,13 @@ export default function EmailHistory({
   const [replyText, setReplyText] = useState("");
   const [isReplying, setIsReplying] = useState(false);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [localLogs, setLocalLogs] = useState(emailLogs);
   const router = useRouter();
+
+  // Sync local state when server props change
+  useEffect(() => {
+    setLocalLogs(emailLogs);
+  }, [emailLogs]);
 
   useEffect(() => {
     if (onExpandChange) {
@@ -104,31 +110,48 @@ export default function EmailHistory({
 
   const handleToggleReadStatus = async (logId: string, currentStatus: boolean, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    
+    // Optimistically update UI instantly
+    const newStatus = !currentStatus;
+    setLocalLogs(prev => prev.map(log => log.id === logId ? { ...log, isRead: newStatus } : log));
+
     try {
-      const res = await toggleEmailReadStatus(logId, !currentStatus);
+      const res = await toggleEmailReadStatus(logId, newStatus);
       if (res?.error) {
         toast.error(res.error);
+        // Revert on error
+        setLocalLogs(prev => prev.map(log => log.id === logId ? { ...log, isRead: currentStatus } : log));
       } else {
-        router.refresh();
+        router.refresh(); // Keep server cache in sync quietly
       }
     } catch (err) {
       toast.error("Failed to update status");
+      // Revert on error
+      setLocalLogs(prev => prev.map(log => log.id === logId ? { ...log, isRead: currentStatus } : log));
     }
   };
 
+  // We do NOT include `threads` in the dependency array to avoid infinite loops,
+  // since `threads` is recreated on every render.
+  // We can just rely on the fact that when `expandedThreadId` changes, we process it once.
   useEffect(() => {
     if (expandedThreadId) {
-      const thread = threads.find((t) => t.id === expandedThreadId);
-      if (thread) {
-        const latestLog = thread.logs[0];
+      // We look up the latest log for this thread directly from localLogs
+      const relatedLogs = localLogs.filter(l => l.threadId === expandedThreadId || l.id === expandedThreadId);
+      if (relatedLogs.length > 0) {
+        // Sort to get latest
+        const sorted = [...relatedLogs].sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+        const latestLog = sorted[0];
         if (latestLog.type === "RECEIVED" && !latestLog.isRead) {
+          // Pass the CURRENT status (false) so the toggle flips it to true
           handleToggleReadStatus(latestLog.id, false);
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedThreadId]);
 
-  let filteredLogs = [...emailLogs];
+  let filteredLogs = [...localLogs];
   
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
@@ -322,9 +345,23 @@ export default function EmailHistory({
                           toast.error(result.error);
                         } else {
                           toast.success("Reply sent successfully");
+                          
+                          // Optimistic update: Add the sent email instantly to the thread
+                          const tempLog = {
+                            id: "temp-" + Date.now(),
+                            subject: replySubject,
+                            body: replyText,
+                            type: "SENT",
+                            isRead: false, // Sent emails don't need reading
+                            openCount: 0,
+                            sentAt: new Date().toISOString(),
+                            threadId: latestLog.threadId || latestLog.id
+                          };
+                          setLocalLogs(prev => [...prev, tempLog]);
+
                           setIsReplying(false);
                           setReplyText("");
-                          // Ideally refresh data here
+                          router.refresh(); // Refresh data here to pull the real log from DB
                         }
                       } catch (e) {
                         toast.error("Failed to send reply");
@@ -352,7 +389,7 @@ export default function EmailHistory({
       {threads.map((thread) => {
         const latestLog = thread.logs[0];
         const isSent = latestLog.type === "SENT";
-        const isUnreadDisplay = isSent ? latestLog.openCount === 0 : !latestLog.isRead; 
+        const isUnreadDisplay = isSent ? false : !latestLog.isRead;
         const threadCount = thread.logs.length;
         
         const displaySubject = latestLog.subject?.trim() ? latestLog.subject : "No Subject";

@@ -138,10 +138,15 @@ export async function POST(req: Request) {
     
     // Make sure the lead belongs to the current user's tenant
     if (existingLog && existingLog.lead) {
-      const leadCampaign = await prisma.campaign.findUnique({
-        where: { id: existingLog.lead.campaignId }
-      });
-      if (leadCampaign && leadCampaign.userId === session.user.tenantId) {
+      let isOwner = existingLog.lead.userId === session.user.tenantId;
+      if (!isOwner && existingLog.lead.campaignId) {
+        const leadCampaign = await prisma.campaign.findUnique({
+          where: { id: existingLog.lead.campaignId }
+        });
+        isOwner = leadCampaign?.userId === session.user.tenantId;
+      }
+      
+      if (isOwner) {
         matchingLeads.push(existingLog.lead);
       }
     }
@@ -152,7 +157,10 @@ export async function POST(req: Request) {
     matchingLeads = await prisma.lead.findMany({
       where: {
         email: { equals: senderEmail, mode: "insensitive" },
-        campaign: { userId: session.user.tenantId },
+        OR: [
+          { userId: session.user.tenantId },
+          { campaign: { userId: session.user.tenantId } }
+        ]
       },
     });
   }

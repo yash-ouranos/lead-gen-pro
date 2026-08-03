@@ -5,9 +5,14 @@ import { prisma } from"@/lib/prisma";
 
 export async function POST(request: Request) {
  const session = await getServerSession(authOptions);
- if (!session?.user?.id) {
- return NextResponse.json({ error:"Unauthorized"}, { status: 401 });
- }
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { hasPermission } = await import("@/lib/permissions");
+  if (!hasPermission(session, "MANAGE_LEADS")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
  try {
  const data = await request.json();

@@ -7,9 +7,14 @@ import { ApifyClient } from"apify-client";
 
 export async function createCampaign(formData: FormData) {
  const session = await getServerSession(authOptions);
- if (!session?.user?.id) {
- return { error:"Unauthorized"};
- }
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" };
+  }
+
+  const { hasPermission } = await import("@/lib/permissions");
+  if (!hasPermission(session, "RUN_AI_SCRAPING")) {
+    return { error: "Forbidden. You do not have permission to run AI scraping campaigns." };
+  }
 
  const user = await prisma.user.findUnique({
  where: { id: session.user.tenantId },

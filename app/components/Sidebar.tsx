@@ -4,30 +4,32 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dashboard, Gift, Group, Document, Settings, Phone, Task, UserMultiple, Bot, Connect, Security, UserRole, UserAdmin } from "@carbon/icons-react";
 import { useSidebar } from "@/app/contexts/SidebarContext";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed } = useSidebar();
+  const { hasPermission } = usePermissions();
 
   const mainNav = [
-    { href: "/dashboard", label: "Dashboard", icon: Dashboard },
-    { href: "/leads", label: "Leads", icon: UserMultiple },
-    { href: "/campaigns", label: "AI Lead Scraping", icon: Bot },
-    { href: "/ai-leads", label: "AI Leads", icon: UserMultiple },
-    { href: "/templates", label: "Templates", icon: Document },
-  ];
+    { href: "/dashboard", label: "Dashboard", icon: Dashboard, permission: "VIEW_DASHBOARD" },
+    { href: "/leads", label: "Leads", icon: UserMultiple, permission: "VIEW_LEADS" },
+    { href: "/campaigns", label: "AI Lead Scraping", icon: Bot, permission: "RUN_AI_SCRAPING" },
+    { href: "/ai-leads", label: "AI Leads", icon: UserMultiple, permission: "VIEW_AI_LEADS" },
+    { href: "/templates", label: "Templates", icon: Document, permission: "MANAGE_TEMPLATES" },
+  ].filter(item => hasPermission(item.permission));
 
   const managementNav = [
-    { href: "/staffs", label: "Staffs", icon: UserAdmin },
-    { href: "/promotions", label: "Promotions", icon: Gift },
-    { href: "/referrals", label: "Referrals", icon: Connect },
-    { href: "/method-of-contact", label: "Method Of Contact", icon: Phone },
-    { href: "/designations", label: "Designations", icon: UserRole },
-    { href: "/industries", label: "Industries", icon: Dashboard },
-    { href: "/lead-status", label: "Lead Status", icon: Task },
-    { href: "/permissions", label: "Permissions", icon: Security },
-    { href: "/roles", label: "Roles", icon: UserRole },
-  ];
+    { href: "/staffs", label: "Staffs", icon: UserAdmin, permission: "MANAGE_STAFF" },
+    { href: "/promotions", label: "Promotions", icon: Gift, permission: "MANAGE_PROMOTIONS" },
+    { href: "/referrals", label: "Referrals", icon: Connect, permission: "MANAGE_REFERRALS" },
+    { href: "/method-of-contact", label: "Method Of Contact", icon: Phone, permission: "MANAGE_SYSTEM_DATA" },
+    { href: "/designations", label: "Designations", icon: UserRole, permission: "MANAGE_SYSTEM_DATA" },
+    { href: "/industries", label: "Industries", icon: Dashboard, permission: "MANAGE_SYSTEM_DATA" },
+    { href: "/lead-status", label: "Lead Status", icon: Task, permission: "MANAGE_SYSTEM_DATA" },
+    { href: "/permissions", label: "Permissions", icon: Security, permission: "MANAGE_PERMISSIONS" },
+    { href: "/roles", label: "Roles", icon: UserRole, permission: "MANAGE_ROLES" },
+  ].filter(item => hasPermission(item.permission));
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";

@@ -53,7 +53,7 @@ export async function sendEmail(leadId: string, subject: string, body: string, r
   // Construct raw email RFC 2822 formatted string
   const messageParts = [
 `From: ${session.user.email}`,
-`To: yash.kevadiya@ouranostech.com`, // TEST OVERRIDE
+`To: ${lead.email}`,
 `Subject: =?utf-8?B?${Buffer.from(subject).toString("base64")}?=`,
 "MIME-Version: 1.0",
 "Content-Type: text/html; charset=utf-8"
@@ -121,10 +121,11 @@ export async function sendEmail(leadId: string, subject: string, body: string, r
  }
  });
 
- revalidatePath("/leads");
- revalidatePath("/ai-leads");
- revalidatePath("/dashboard");
- revalidatePath(`/email/compose/${leadId}`);
+    revalidatePath("/leads");
+    revalidatePath(`/leads/${leadId}`);
+    revalidatePath("/ai-leads");
+    revalidatePath("/dashboard");
+    revalidatePath(`/email/compose/${leadId}`);
 
  return { success: true };
  } catch (error: any) {
@@ -138,11 +139,56 @@ export async function toggleEmailReadStatus(logId: string, isRead: boolean) {
   if (!session?.user?.id) return { error: "Unauthorized" };
 
   try {
-    await prisma.emailLog.update({
+    const emailLog = await prisma.emailLog.update({
       where: { id: logId },
       data: { isRead }
     });
-    // Optional: revalidate path if needed, though client side state might handle it
+
+    // Attempt to sync this back to Gmail
+    if (emailLog.messageId) {
+      try {
+        const account = await prisma.account.findFirst({
+          where: { userId: session.user.tenantId, provider: "google" }
+        });
+
+        if (account && account.refresh_token) {
+          const auth = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+          );
+          auth.setCredentials({ refresh_token: account.refresh_token });
+          const gmail = google.gmail({ version: "v1", auth });
+
+          // Search for the exact message by its Message-ID header
+          const cleanMessageId = emailLog.messageId.replace(/[<>]/g, '');
+          const searchRes = await gmail.users.messages.list({
+            userId: "me",
+            q: `rfc822msgid:${cleanMessageId}`
+          });
+
+          if (searchRes.data.messages && searchRes.data.messages.length > 0) {
+            const gmailMessageId = searchRes.data.messages[0].id;
+            if (gmailMessageId) {
+              await gmail.users.messages.modify({
+                userId: "me",
+                id: gmailMessageId,
+                requestBody: {
+                  addLabelIds: isRead ? [] : ["UNREAD"],
+                  removeLabelIds: isRead ? ["UNREAD"] : []
+                }
+              });
+            }
+          }
+        }
+      } catch (gmailError) {
+        console.error("Failed to sync read status to Gmail:", gmailError);
+        // We don't throw here so the CRM DB update still succeeds
+      }
+    }
+
+    revalidatePath("/leads");
+    revalidatePath("/ai-leads");
+    revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
     console.error("Error toggling read status:", error);

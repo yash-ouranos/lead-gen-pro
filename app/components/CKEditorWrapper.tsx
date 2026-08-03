@@ -8,7 +8,15 @@ import {
     Italic,
     Paragraph,
     Link,
-    List
+    List,
+    Image,
+    ImageUpload,
+    Base64UploadAdapter,
+    ImageToolbar,
+    ImageCaption,
+    ImageStyle,
+    ImageResize,
+    LinkImage
 } from 'ckeditor5';
 import 'ckeditor5/ckeditor5.css';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -27,8 +35,40 @@ export default function CKEditorWrapper({ value, onChange, placeholder }: CKEdit
                     editor={ClassicEditor}
                     config={{
                         licenseKey: 'GPL',
-                        plugins: [Essentials, Bold, Italic, Paragraph, Link, List],
-                        toolbar: ['undo', 'redo', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList'],
+                        plugins: [
+                            Essentials, 
+                            Bold, 
+                            Italic, 
+                            Paragraph, 
+                            Link, 
+                            List,
+                            Image,
+                            ImageUpload,
+                            Base64UploadAdapter,
+                            ImageToolbar,
+                            ImageCaption,
+                            ImageStyle,
+                            ImageResize,
+                            LinkImage
+                        ],
+                        toolbar: [
+                            'undo', 'redo', '|', 
+                            'bold', 'italic', 'link', '|',
+                            'bulletedList', 'numberedList', '|',
+                            'uploadImage'
+                        ],
+                        image: {
+                            toolbar: [
+                                'imageStyle:inline',
+                                'imageStyle:block',
+                                'imageStyle:side',
+                                '|',
+                                'toggleImageCaption',
+                                'imageTextAlternative',
+                                '|',
+                                'linkImage'
+                            ]
+                        },
                         placeholder: placeholder || 'Type your message here...'
                     }}
                     data={value}

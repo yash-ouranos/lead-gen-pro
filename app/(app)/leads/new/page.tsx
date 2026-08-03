@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatStatus, sortStatuses } from "@/lib/utils";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
 import SearchableCreatableSelect from "@/app/components/SearchableCreatableSelect";
-import { UserFollow, Save, CheckmarkOutline, ArrowLeft } from "@carbon/icons-react";
+import { UserFollow, Save, CheckmarkOutline, ArrowLeft, Add } from "@carbon/icons-react";
 import toast from "react-hot-toast";
 
 type LocationData = {
@@ -112,7 +112,7 @@ export default function NewLeadPage() {
     if (res.ok) {
       const newDesig = await res.json();
       setDesignations([...designations, newDesig]);
-      setFormData({ ...formData, designation: newDesig.id });
+      setFormData({ ...formData, designation: newDesig.name });
     }
   };
 
@@ -125,6 +125,41 @@ export default function NewLeadPage() {
     if (res.ok) {
       const newItem = await res.json();
       setIndustries([newItem, ...industries]);
+      setFormData({ ...formData, industry: newItem.name });
+    }
+  };
+
+  const handleCreatePromotion = async (name: string) => {
+    const res = await fetch("/api/promotions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+    if (res.ok) {
+      const newItem = await res.json();
+      setPromotions([newItem, ...promotions]);
+      setFormData({ ...formData, promotionIds: [...formData.promotionIds, newItem.id] });
+    } else {
+      toast.error("Failed to create promotion");
+    }
+  };
+
+  const handleCreateReferral = async (name: string) => {
+    if (formData.promotionIds.length === 0) {
+      toast.error("Please select a Promotion first");
+      return;
+    }
+    const res = await fetch("/api/referrals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, promotionId: formData.promotionIds[0] })
+    });
+    if (res.ok) {
+      const newItem = await res.json();
+      setReferrals([newItem, ...referrals]);
+      setFormData({ ...formData, referralId: newItem.id });
+    } else {
+      toast.error("Failed to create referral");
     }
   };
 
@@ -195,29 +230,27 @@ export default function NewLeadPage() {
             
             <div>
               <label className={labelClasses}>Promotion</label>
-              <div className="relative">
-                <MultiSelectDropdown 
-                  options={promotions}
-                  selectedIds={formData.promotionIds}
-                  onChange={(ids) => setFormData({...formData, promotionIds: ids})}
-                  placeholder="Select Promotions"
-                />
-              </div>
+              <SearchableCreatableSelect
+                options={promotions}
+                value={formData.promotionIds[0] || ""}
+                onChange={(val) => setFormData({ ...formData, promotionIds: val ? [val] : [] })}
+                onCreate={handleCreatePromotion}
+                placeholder="Select or add..."
+                valueKey="id"
+              />
             </div>
 
             <div>
               <label className={labelClasses}>Referral</label>
-              <select 
+              <SearchableCreatableSelect
+                options={referrals}
                 value={formData.referralId}
-                onChange={e => setFormData({...formData, referralId: e.target.value})}
-                className={`${getInputClasses('referralId')} appearance-none`}
-                style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23737373%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem top 50%', backgroundSize: '0.65rem auto' }}
-              >
-                <option value="">Select Referral</option>
-                {referrals.map(r => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
+                onChange={(val) => setFormData({ ...formData, referralId: val })}
+                onCreate={handleCreateReferral}
+                placeholder={formData.promotionIds.length > 0 ? "Select or add..." : "Select a promotion first"}
+                disabled={formData.promotionIds.length === 0}
+                valueKey="id"
+              />
             </div>
 
             <div>
@@ -279,7 +312,7 @@ export default function NewLeadPage() {
             </div>
             <div>
               <label className={labelClasses}>Email</label>
-              <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={getInputClasses('email')} placeholder="Enter Email"/>
+              <input suppressHydrationWarning type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={getInputClasses('email')} placeholder="Enter Email"/>
             </div>
 
 
