@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Edit, Close, Chat, Search, Menu } from "@carbon/icons-react";
 import { useRouter } from "next/navigation";
 import { formatStatus, sortStatuses } from "@/lib/utils";
@@ -8,9 +9,12 @@ import { transferToMainLeads } from "@/app/(app)/ai-leads/actions";
 import toast from "react-hot-toast";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
 import EmailHistory from "@/app/components/EmailHistory";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 export default function LeadDetailsPanel({ lead, templates = [], onClose }: { lead: any; templates?: any[]; onClose: () => void }) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const canAssignUser = hasPermission("ASSIGN_USER");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -290,7 +294,7 @@ export default function LeadDetailsPanel({ lead, templates = [], onClose }: { le
               {renderDetailRow("Email", "email", editedLead.email, "email")}
               {renderDetailRow("Customer Categories", "leadType", Array.isArray(editedLead.leadType) ? editedLead.leadType.join(", ") : editedLead.leadType, "multiselect")}
               {renderDetailRow("Follow-Up Date", "followUpDate", editedLead.followUpDate ? new Date(editedLead.followUpDate).toLocaleDateString() : null, "date")}
-              {renderDetailRow("Assign User", "assignStaffId", staffs.find(s => s.id === editedLead.assignStaffId)?.name, "select", staffs.map(s => ({ id: s.id, value: s.id, label: s.name })))}
+              {renderDetailRow("Assign User", "assignStaffId", staffs.find(s => s.id === editedLead.assignStaffId)?.name, canAssignUser ? "select" : "text", staffs.map(s => ({ id: s.id, value: s.id, label: s.name })))}
               {renderDetailRow("Lead Status", "status", editedLead.status ? formatStatus(editedLead.status) : null, "select", sortStatuses(leadStatuses).map(s => ({ id: s.id, value: s.name, label: formatStatus(s.name) })))}
               {renderDetailRow("Lead Temperature", "temperature", editedLead.temperature, "select", [{ id: 'Hot', value: 'Hot', label: 'Hot' }, { id: 'Warm', value: 'Warm', label: 'Warm' }, { id: 'Cold', value: 'Cold', label: 'Cold' }])}
               {renderDetailRow("Designation", "designation", editedLead.designation, "text")}

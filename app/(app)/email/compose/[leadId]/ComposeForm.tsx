@@ -6,6 +6,8 @@ import { sendEmail } from "./actions";
 import type { EmailTemplate } from "@prisma/client";
 import dynamic from "next/dynamic";
 
+import { signIn } from "next-auth/react";
+
 const CKEditor = dynamic(() => import("@/app/components/CKEditorWrapper"), { ssr: false });
 
 interface ComposeFormProps {
@@ -20,10 +22,12 @@ interface ComposeFormProps {
   templates: EmailTemplate[];
   initialSubject: string;
   initialBody: string;
+  hasGoogleAccount?: boolean;
+  userId: string;
   onSuccess?: () => void;
 }
 
-export default function ComposeForm({ leadId, leadData, templates, initialSubject, initialBody, onSuccess }: ComposeFormProps) {
+export default function ComposeForm({ leadId, leadData, templates, initialSubject, initialBody, hasGoogleAccount, userId, onSuccess }: ComposeFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,11 +95,50 @@ export default function ComposeForm({ leadId, leadData, templates, initialSubjec
     }`;
   };
 
+  const handleGoogleConnect = () => {
+    document.cookie = `link_account_user_id=${userId}; path=/; max-age=600`; // 10 minute expiry
+    signIn('google');
+  };
+
+  if (hasGoogleAccount === false) {
+    return (
+      <div className="flex-1 p-6 md:p-8 flex flex-col items-center justify-center bg-gray-50 h-full text-center">
+        <div className="max-w-md w-full p-8 bg-white border border-gray-100 rounded-xl shadow-sm mt-10 mx-auto">
+          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">Connect your Google Account</h2>
+          <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+            You must connect your Google account before you can compose and send emails to your leads directly from the CRM.
+          </p>
+          <button
+            onClick={handleGoogleConnect}
+            type="button"
+            className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors text-sm flex items-center justify-center gap-2"
+          >
+            Continue with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 p-6 md:p-8">
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 mb-6 border border-red-100">
-          {error}
+        <div className="bg-red-50 text-red-600 p-4 mb-6 border border-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>{error}</div>
+          {error.includes("connect your Google account") && (
+            <button
+              onClick={() => signIn('google')}
+              type="button"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded shadow-sm transition-colors whitespace-nowrap text-sm"
+            >
+              Continue with Google
+            </button>
+          )}
         </div>
       )}
 

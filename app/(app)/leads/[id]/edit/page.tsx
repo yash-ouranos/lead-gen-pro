@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
 import SearchableCreatableSelect from "@/app/components/SearchableCreatableSelect";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { DocumentAdd, Building, Phone, Earth, Information, Attachment, ArrowRight } from "@carbon/icons-react";
 import toast from "react-hot-toast";
 import { UserFollow, Save, CheckmarkOutline, ArrowLeft, Add } from "@carbon/icons-react";
@@ -45,6 +47,8 @@ export default function EditLeadPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const { hasPermission } = usePermissions();
+  const canAssignUser = hasPermission("ASSIGN_USER");
   
   const [promotions, setPromotions] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -363,6 +367,7 @@ export default function EditLeadPage() {
             </div>
 
 
+            {canAssignUser && (
             <div>
               <label className={labelClasses}>Assign User</label>
               <select value={formData.assignStaffId} onChange={e => setFormData({...formData, assignStaffId: e.target.value})} className={`${getInputClasses('assignStaffId')} appearance-none`}
@@ -374,6 +379,7 @@ export default function EditLeadPage() {
                 ))}
               </select>
             </div>
+            )}
             <div>
               <label className={labelClasses}>Follow-Up Date</label>
               <input type="date" value={formData.followUpDate} onChange={e => setFormData({...formData, followUpDate: e.target.value})} className={getInputClasses('followUpDate')} />

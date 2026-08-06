@@ -49,14 +49,14 @@ export async function POST(req: Request) {
  // Get the user's latest access token
  const account = await prisma.account.findFirst({
  where: {
- userId: session.user.tenantId,
+ userId: session.user.id,
  provider:"google",
  },
  });
 
  if (!account?.access_token) {
  return NextResponse.json(
- { error:"Google account not linked or missing access token. Please sign in again."},
+ { error: "You must connect your Google account to sync emails. Please log out and sign in using 'Continue with Google'." },
  { status: 400 }
  );
  }
@@ -199,11 +199,11 @@ export async function POST(req: Request) {
         }
       });
 
- // Update lead status to CONTACTED if it's currently NEW or Not Contacted
- if (['NEW', 'Not Contacted'].includes(lead.status)) {
+ // Update lead status to ENGAGED if it's currently NEW, Not Contacted, or EMAIL_SENT
+ if (['NEW', 'Not Contacted', 'EMAIL_SENT'].includes(lead.status)) {
  await prisma.lead.update({
  where: { id: lead.id },
- data: { status: "CONTACTED" },
+ data: { status: "ENGAGED" },
  });
 
  await prisma.leadActivity.create({
@@ -211,7 +211,7 @@ export async function POST(req: Request) {
  leadId: lead.id,
  userId: session.user.id,
  type: "NOTE_ADDED",
- description: `Status changed to CONTACTED due to incoming email reply.`,
+ description: `Status changed to ENGAGED due to incoming email reply.`,
  },
  });
  }

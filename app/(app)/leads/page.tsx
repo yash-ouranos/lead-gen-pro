@@ -13,10 +13,13 @@ export default async function LeadsPage() {
  }
 
  // Fetch all leads for this user
+  const isStaff = session.user.role?.name !== "ADMIN" && session.user.staffId;
+
   const leads = await prisma.lead.findMany({
     where: {
       userId: session.user.tenantId,
-      isAiLead: false
+      isAiLead: false,
+      ...(isStaff ? { assignStaffId: session.user.staffId } : {})
     },
     orderBy: [
  { aiScore:"desc"},

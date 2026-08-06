@@ -12,7 +12,7 @@ export default function ActiveCampaigns({ campaigns }: ActiveCampaignsProps) {
  <div className="bg-blue-50 border border-blue-100 p-6 shadow-sm">
  <h2 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
  <Renew className="w-5 h-5 animate-spin text-blue-600"/>
- Active Campaigns ({campaigns.length})
+ AI Lead Scraping ({campaigns.length})
  </h2>
  <div className="space-y-3">
  {campaigns.map((campaign) => (

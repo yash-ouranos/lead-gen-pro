@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Activity, ChevronLeft, Star, Renew, Launch, ChevronRight, Email, Location, Box, TrashCan, Edit } from "@carbon/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatStatus, sortStatuses, getStatusColorClass } from "@/lib/utils";
 import ConfirmModal from "./ConfirmModal";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 type Lead = any; // We can type this properly later
 
@@ -27,6 +29,8 @@ export default function LeadTable({
   setSelectedLeadIds = () => {}
 }: LeadTableProps) {
  const router = useRouter();
+ const { hasPermission } = usePermissions();
+ const canAssignUser = hasPermission("ASSIGN_USER");
  const [currentPage, setCurrentPage] = useState(1);
   const [localLeads, setLocalLeads] = useState<Lead[]>(leads);
   const [leadStatuses, setLeadStatuses] = useState<any[]>([]);
@@ -239,7 +243,7 @@ export default function LeadTable({
                           <select
                             value={lead.assignStaffId || ""}
                             onChange={(e) => handleStaffChange(lead.id, e.target.value)}
-                            disabled={updatingId === lead.id}
+                            disabled={updatingId === lead.id || !canAssignUser}
                             className="appearance-none outline-none cursor-pointer w-full text-center px-2 py-1.5 pr-6 text-xs font-medium tracking-wide border transition-all bg-muted text-foreground border-border hover:border-muted-foreground/50 rounded"
                           >
                             <option value="">Unassigned</option>
@@ -323,7 +327,7 @@ export default function LeadTable({
                           <select
                             value={lead.assignStaffId || ""}
                             onChange={(e) => handleStaffChange(lead.id, e.target.value)}
-                            disabled={updatingId === lead.id}
+                            disabled={updatingId === lead.id || !canAssignUser}
                             className="appearance-none outline-none cursor-pointer w-full text-center px-2 py-1.5 pr-6 text-xs font-medium tracking-wide border transition-all bg-muted text-foreground border-border hover:border-muted-foreground/50 rounded"
                           >
                             <option value="">Unassigned</option>

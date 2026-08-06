@@ -13,20 +13,23 @@ export async function sendEmail(leadId: string, subject: string, body: string, r
  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
  if (!lead || !lead.email) return { error:"Lead not found or has no email"};
 
- const account = await prisma.account.findFirst({
- where: { userId: session.user.tenantId, provider:"google"}
- });
+  const account = await prisma.account.findFirst({
+    where: { userId: session.user.id, provider: "google" }
+  });
 
- if (!account || !account.refresh_token) {
- return { error:"No Google account connected for sending emails. Please log out and log back in."};
- }
+  if (!account || (!account.refresh_token && !account.access_token)) {
+    return { error: "You must connect your Google account to send emails. Please log out and sign in using 'Continue with Google'." };
+  }
 
  try {
  const auth = new google.auth.OAuth2(
  process.env.GOOGLE_CLIENT_ID,
  process.env.GOOGLE_CLIENT_SECRET
  );
- auth.setCredentials({ refresh_token: account.refresh_token });
+ auth.setCredentials({ 
+   refresh_token: account.refresh_token || undefined,
+   access_token: account.access_token || undefined 
+ });
 
  const gmail = google.gmail({ version:"v1", auth });
 
@@ -103,10 +106,10 @@ export async function sendEmail(leadId: string, subject: string, body: string, r
  }
  ];
 
- if (lead.status !=="CONTACTED") {
+ if (lead.status !=="EMAIL_SENT") {
  activitiesToCreate.push({
  type:"STATUS_CHANGE",
- description:`Status changed from ${lead.status} to CONTACTED`,
+ description:`Status changed from ${lead.status} to EMAIL_SENT`,
  userId: session.user.id
  });
  }
@@ -114,7 +117,8 @@ export async function sendEmail(leadId: string, subject: string, body: string, r
  await prisma.lead.update({
  where: { id: leadId },
  data: { 
- status:"CONTACTED",
+ status:"EMAIL_SENT",
+
  activities: {
  create: activitiesToCreate
  }
@@ -148,15 +152,18 @@ export async function toggleEmailReadStatus(logId: string, isRead: boolean) {
     if (emailLog.messageId) {
       try {
         const account = await prisma.account.findFirst({
-          where: { userId: session.user.tenantId, provider: "google" }
+          where: { userId: session.user.id, provider: "google" }
         });
 
-        if (account && account.refresh_token) {
+        if (account && (account.refresh_token || account.access_token)) {
           const auth = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET
           );
-          auth.setCredentials({ refresh_token: account.refresh_token });
+          auth.setCredentials({ 
+            refresh_token: account.refresh_token || undefined,
+            access_token: account.access_token || undefined 
+          });
           const gmail = google.gmail({ version: "v1", auth });
 
           // Search for the exact message by its Message-ID header

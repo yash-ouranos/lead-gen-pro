@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { formatStatus, sortStatuses } from "@/lib/utils";
 import MultiSelectDropdown from "@/app/components/MultiSelectDropdown";
 import SearchableCreatableSelect from "@/app/components/SearchableCreatableSelect";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import { UserFollow, Save, CheckmarkOutline, ArrowLeft, Add } from "@carbon/icons-react";
 import toast from "react-hot-toast";
 
@@ -42,6 +44,8 @@ const locationData: LocationData = {
 
 export default function NewLeadPage() {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const canAssignUser = hasPermission("ASSIGN_USER");
   
   const [promotions, setPromotions] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -316,6 +320,7 @@ export default function NewLeadPage() {
             </div>
 
 
+            {canAssignUser && (
             <div>
               <label className={labelClasses}>Assign User</label>
               <select value={formData.assignStaffId} onChange={e => setFormData({...formData, assignStaffId: e.target.value})} className={`${getInputClasses('assignStaffId')} appearance-none`}
@@ -327,6 +332,7 @@ export default function NewLeadPage() {
                 ))}
               </select>
             </div>
+            )}
             <div>
               <label className={labelClasses}>Follow-Up Date</label>
               <input type="date" value={formData.followUpDate} onChange={e => setFormData({...formData, followUpDate: e.target.value})} className={getInputClasses('followUpDate')} />

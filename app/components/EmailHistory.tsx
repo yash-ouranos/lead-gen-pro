@@ -7,6 +7,8 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
+import { signIn } from "next-auth/react";
+
 const CKEditor = dynamic(() => import("@/app/components/CKEditorWrapper"), { ssr: false });
 
 function cleanEmailBody(body: string, isHtml: boolean) {
@@ -58,14 +60,16 @@ function ThreadMessage({ log, isLatest, isSent }: { log: any, isLatest: boolean,
       </div>
       
       {!isCollapsed && (
-        <div className="p-4 text-sm text-gray-800 font-sans leading-relaxed overflow-x-auto bg-white animate-in fade-in duration-200">
-          <div className="mb-4">
-            <p className="text-xs text-gray-500">to {isSent ? "Lead" : "Me"}</p>
-          </div>
+        <div className="p-5 text-[13px] text-gray-700 leading-relaxed bg-white">
           {isHtml ? (
-            <div dangerouslySetInnerHTML={{ __html: cleanEmailBody(displayBody, true) }} />
+            <div 
+              dangerouslySetInnerHTML={{ __html: cleanEmailBody(displayBody, true) }}
+              className="prose prose-sm max-w-none prose-p:my-1 prose-a:text-blue-600 hover:prose-a:text-blue-500 prose-ul:my-1 prose-li:my-0.5"
+            />
           ) : (
-            <div className="whitespace-pre-wrap">{cleanEmailBody(displayBody, false)}</div>
+            <div className="whitespace-pre-wrap font-sans">
+              {cleanEmailBody(displayBody, false)}
+            </div>
           )}
         </div>
       )}
@@ -90,6 +94,7 @@ export default function EmailHistory({
   const [replyText, setReplyText] = useState("");
   const [isReplying, setIsReplying] = useState(false);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [needsGoogleConnect, setNeedsGoogleConnect] = useState(false);
   const [localLogs, setLocalLogs] = useState(emailLogs);
   const router = useRouter();
 
@@ -118,7 +123,11 @@ export default function EmailHistory({
     try {
       const res = await toggleEmailReadStatus(logId, newStatus);
       if (res?.error) {
-        toast.error(res.error);
+        if (res.error.includes("connect your Google account")) {
+          setNeedsGoogleConnect(true);
+        } else {
+          toast.error(res.error);
+        }
         // Revert on error
         setLocalLogs(prev => prev.map(log => log.id === logId ? { ...log, isRead: currentStatus } : log));
       } else {
@@ -236,6 +245,32 @@ export default function EmailHistory({
     return latestB - latestA;
   });
 
+  if (needsGoogleConnect) {
+    return (
+      <div className="mt-8 flex flex-col items-center justify-center p-12 bg-white rounded-xl text-center border border-gray-100 shadow-sm">
+        <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4 border border-blue-100">
+          <Email size={32} />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Connect Your Gmail</h3>
+        <p className="text-gray-500 max-w-md mb-6">
+          To send and receive emails directly from the CRM, you need to link your Google account.
+        </p>
+        <button
+          onClick={() => signIn('google')}
+          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors"
+        >
+          Continue with Google
+        </button>
+        <button
+          onClick={() => setNeedsGoogleConnect(false)}
+          className="mt-4 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
   if (!emailLogs || emailLogs.length === 0) {
     return (
       <div className="mt-8 flex flex-col items-center justify-center p-12 bg-white rounded-xl text-center">
@@ -342,7 +377,11 @@ export default function EmailHistory({
                         const replySubject = latestLog.subject.toLowerCase().startsWith('re:') ? latestLog.subject : `Re: ${latestLog.subject}`;
                         const result = await sendEmail(leadId, replySubject, replyText, latestLog.id);
                         if (result.error) {
-                          toast.error(result.error);
+                          if (result.error.includes("connect your Google account")) {
+                            setNeedsGoogleConnect(true);
+                          } else {
+                            toast.error(result.error);
+                          }
                         } else {
                           toast.success("Reply sent successfully");
                           

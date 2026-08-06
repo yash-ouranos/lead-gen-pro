@@ -30,6 +30,11 @@ export default async function ComposeEmailPage({ params }: { params: { leadId: s
  notFound();
  }
 
+ const account = await prisma.account.findFirst({
+    where: { userId: session.user.id, provider: "google" }
+  });
+  const hasGoogleAccount = !!account;
+
  const templates = await prisma.emailTemplate.findMany({
  where: { userId: session.user.tenantId },
  orderBy: { createdAt:'desc'}
@@ -93,6 +98,8 @@ Best regards,
           templates={templates}
           initialSubject={initialSubject} 
           initialBody={initialBody} 
+          hasGoogleAccount={hasGoogleAccount}
+          userId={session.user.id}
         />
 
       </div>

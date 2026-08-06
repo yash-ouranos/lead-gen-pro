@@ -17,10 +17,13 @@ export default async function AiLeadsPage() {
     );
   }
 
+  const isStaff = session.user.role?.name !== "ADMIN" && session.user.staffId;
+
   const aiLeads = await prisma.lead.findMany({
     where: { 
       userId: session.user.tenantId,
-      isAiLead: true 
+      isAiLead: true,
+      ...(isStaff ? { assignStaffId: session.user.staffId } : {})
     },
     include: {
       campaign: {

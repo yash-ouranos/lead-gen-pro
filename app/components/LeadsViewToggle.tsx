@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import LeadTable from "./LeadTable";
 import KanbanBoard from "./KanbanBoard";
@@ -11,11 +12,14 @@ import Link from "next/link";
 import { useAdvancedFilter } from "@/app/hooks/useAdvancedFilter";
 import AdvancedFilterPopover from "./AdvancedFilterPopover";
 import ImportLeadsModal from "./ImportLeadsModal";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 
 
 
 export default function LeadsViewToggle({ leads, templates = [], variant = "leads" }: { leads: any[], templates?: any[], variant?: "dashboard" | "leads" }) {
     const router = useRouter();
+    const { hasPermission } = usePermissions();
+    const canAssignUser = hasPermission("ASSIGN_USER");
     const [view, setView] = useState<"table" | "kanban">("table");
     const [selectedLead, setSelectedLead] = useState<any>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -147,16 +151,18 @@ export default function LeadsViewToggle({ leads, templates = [], variant = "lead
                             >
                                 <Upload size={16} /> Import
                             </button>
-                            <button 
-                                onClick={() => {
-                                    setSelectedStaffToAssign("");
-                                    setIsAssignModalOpen(true);
-                                }}
-                                disabled={selectedLeadIds.length === 0}
-                                className="flex items-center gap-2 border border-border px-4 py-2 font-medium hover:bg-muted transition-colors rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                                <User size={16} /> Assign {selectedLeadIds.length > 0 && `(${selectedLeadIds.length})`}
-                            </button>
+                            {canAssignUser && (
+                                <button 
+                                    onClick={() => {
+                                        setSelectedStaffToAssign("");
+                                        setIsAssignModalOpen(true);
+                                    }}
+                                    disabled={selectedLeadIds.length === 0}
+                                    className="flex items-center gap-2 border border-border px-4 py-2 font-medium hover:bg-muted transition-colors rounded-md bg-background text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                >
+                                    <User size={16} /> Assign {selectedLeadIds.length > 0 && `(${selectedLeadIds.length})`}
+                                </button>
+                            )}
                         </>
                     )}
                     <AdvancedFilterPopover

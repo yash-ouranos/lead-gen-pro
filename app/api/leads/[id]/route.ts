@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hasPermission } from "@/lib/permissions";
 
 export async function GET(
   request: Request,
@@ -53,6 +54,7 @@ export async function PUT(
     if (!isOwner) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
 
     const data = await request.json();
+    const canAssignUser = hasPermission(session, "ASSIGN_USER");
     const activities: any[] = [];
 
     if (data.status && data.status !== lead.status) {
@@ -63,10 +65,12 @@ export async function PUT(
       });
     }
 
-    if (data.assignStaffId !== undefined && data.assignStaffId !== lead.assignStaffId) {
+    const finalAssignStaffId = canAssignUser && data.assignStaffId !== undefined ? (data.assignStaffId || null) : lead.assignStaffId;
+
+    if (finalAssignStaffId !== lead.assignStaffId) {
       activities.push({
         type: "SYSTEM",
-        description: data.assignStaffId ? `Assigned to staff ID: ${data.assignStaffId}` : `Unassigned from staff`,
+        description: finalAssignStaffId ? `Assigned to staff ID: ${finalAssignStaffId}` : `Unassigned from staff`,
         userId: session.user.id
       });
     }
@@ -89,7 +93,7 @@ export async function PUT(
         phone: data.phone,
         email: data.email,
         website: data.website,
-        assignStaffId: data.assignStaffId || null,
+        assignStaffId: finalAssignStaffId,
         followUpDate: data.followUpDate ? new Date(data.followUpDate) : null,
         status: data.status,
         streetNo: data.streetNo,
@@ -139,6 +143,7 @@ export async function PATCH(
 
     const updateData: any = {};
     const activities: any[] = [];
+    const canAssignUser = hasPermission(session, "ASSIGN_USER");
 
     if ('status' in data && data.status !== lead.status) {
       updateData.status = data.status;
@@ -150,6 +155,9 @@ export async function PATCH(
     }
 
     if ('assignStaffId' in data && data.assignStaffId !== lead.assignStaffId) {
+      if (!canAssignUser) {
+        return NextResponse.json({ error: "Only admins and authorized users can reassign leads" }, { status: 403 });
+      }
       updateData.assignStaffId = data.assignStaffId;
       activities.push({
         type: "SYSTEM",

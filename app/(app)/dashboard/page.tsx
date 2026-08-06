@@ -25,12 +25,19 @@ export default async function DashboardPage() {
     }
   });
 
+  const isStaff = session.user.role?.name !== "ADMIN" && session.user.staffId;
+
   // Fetch all leads for this user (both manual and campaign-based)
   const leads = await prisma.lead.findMany({
     where: {
-      OR: [
-        { userId: session.user.tenantId },
-        { campaign: { userId: session.user.tenantId } }
+      AND: [
+        {
+          OR: [
+            { userId: session.user.tenantId },
+            { campaign: { userId: session.user.tenantId } }
+          ]
+        },
+        isStaff ? { assignStaffId: session.user.staffId } : {}
       ]
     },
     orderBy: [
@@ -81,7 +88,7 @@ export default async function DashboardPage() {
           </div>
           <div className="flex flex-col items-end">
             <h3 className="text-xs text-muted-foreground font-medium">In Progress Deals</h3>
-            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => ['CONTACTED', 'Attempted to Contact', 'Contact in future', 'MEETING_BOOKED'].includes(l.status)).length}</p>
+            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => ['EMAIL_SENT', 'Attempted to Contact', 'Contact in future', 'MEETING_BOOKED'].includes(l.status)).length}</p>
           </div>
         </div>
 
@@ -91,8 +98,8 @@ export default async function DashboardPage() {
             <UserSpeaker className="w-8 h-8 text-white" />
           </div>
           <div className="flex flex-col items-end">
-            <h3 className="text-xs text-muted-foreground font-medium">Contacted Clients</h3>
-            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => l.status === 'CONTACTED').length}</p>
+            <h3 className="text-xs text-muted-foreground font-medium">Email Sent Clients</h3>
+            <p className="text-xl font-bold text-foreground mt-0.5">{leads.filter(l => l.status === 'EMAIL_SENT').length}</p>
           </div>
         </div>
 

@@ -5,6 +5,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import type { Adapter } from "next-auth/adapters";
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -61,32 +62,69 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google") {
-        try {
-          await prisma.account.updateMany({
-            where: { 
-              provider: account.provider,
-              providerAccountId: account.providerAccountId
-            },
-            data: {
-              access_token: account.access_token,
-              refresh_token: account.refresh_token || undefined,
-              expires_at: account.expires_at,
-              scope: account.scope,
-            }
-          });
-        } catch (error) {
-          console.error("Failed to update account tokens:", error);
-        }
-      }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      console.log("JWT Callback Triggered:", { tokenId: token?.id, userId: user?.id, accountProvider: account?.provider });
+      if (account && account.provider === "google") {
+        console.log("Connecting Google Account in JWT...");
+        // We are connecting a Google account!
+        const cookieStore = await cookies();
+        const linkUserId = cookieStore.get("link_account_user_id")?.value;
+        const targetUserId = linkUserId || (token.id as string) || (user?.id as string);
+        console.log("Target User ID for Google Account:", targetUserId);
+        if (targetUserId) {
+          try {
+            const existingAccount = await prisma.account.findFirst({
+              where: { provider: "google", providerAccountId: account.providerAccountId }
+            });
+            if (existingAccount) {
+              await prisma.account.update({
+                where: { id: existingAccount.id },
+                data: {
+                  access_token: account.access_token,
+                  refresh_token: account.refresh_token || undefined,
+                  expires_at: account.expires_at,
+                  scope: account.scope,
+                  userId: targetUserId
+                }
+              });
+            } else {
+              await prisma.account.create({
+                data: {
+                  userId: targetUserId,
+                  type: account.type,
+                  provider: account.provider,
+                  providerAccountId: account.providerAccountId,
+                  access_token: account.access_token,
+                  refresh_token: account.refresh_token,
+                  expires_at: account.expires_at,
+                  token_type: account.token_type,
+                  scope: account.scope,
+                  id_token: account.id_token,
+                  session_state: account.session_state as string | null,
+                }
+              });
+            }
+          } catch (error) {
+            console.error("Failed to link account in jwt callback:", error);
+          }
+        }
+      }
+
       if (user) {
-        token.id = user.id;
+        const cookieStore = await cookies();
+        const linkUserId = cookieStore.get("link_account_user_id")?.value;
+
+        // Only update token.id to the OAuth user if we are NOT linking an account
+        if (linkUserId && account?.provider === "google") {
+          token.id = linkUserId;
+        } else if (!token.id) {
+          token.id = user.id;
+        }
         
         const staff = await prisma.staff.findUnique({
-          where: { accountId: user.id },
+          where: { accountId: token.id as string },
           include: { role: true }
         });
 
@@ -95,7 +133,7 @@ export const authOptions: NextAuthOptions = {
           token.staffId = staff.id;
           token.role = staff.role;
         } else {
-          token.tenantId = user.id;
+          token.tenantId = token.id;
           token.role = { name: "ADMIN", permissions: ["ALL"] };
         }
       }

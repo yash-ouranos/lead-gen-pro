@@ -136,7 +136,7 @@ model Lead {
 
   aiScore      Int? // 0-100
   aiAnalysis   String?  @db.Text
-  status       String   @default("NEW") // NEW, CONTACTED, MEETING_BOOKED, CLOSED_WON, CLOSED_LOST, HOLD, Attempted to Contact, Contact in future, Junk Lead, Lost Lead, Not Contacted, Not Qualified
+  status       String   @default("NEW") // NEW, EMAIL_SENT, MEETING_BOOKED, CLOSED_WON, CLOSED_LOST, HOLD, Attempted to Contact, Contact in future, Junk Lead, Lost Lead, Not Contacted, Not Qualified
   activeStatus String   @default("Active") // Active, Inactive, Deleted
   createdAt    DateTime @default(now())
   updatedAt  DateTime @updatedAt

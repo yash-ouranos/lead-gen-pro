@@ -11,7 +11,7 @@ export function formatStatus(status: string | null | undefined) {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }
 
-export const STATUS_ORDER = ["NEW", "OPEN", "CONTACTED", "ENGAGED", "MEETING_BOOKED", "CLOSED_WON", "HOLD", "CLOSED_LOST"];
+export const STATUS_ORDER = ["NEW", "OPEN", "EMAIL_SENT", "ENGAGED", "MEETING_BOOKED", "CLOSED_WON", "HOLD", "CLOSED_LOST"];
 
 export function getStatusColorClass(status: string | null | undefined) {
   if (!status) return 'bg-muted text-muted-foreground border-border hover:border-muted-foreground/50';

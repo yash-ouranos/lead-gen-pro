@@ -10,7 +10,7 @@ import * as DropdownMenuPrimitive from"@radix-ui/react-dropdown-menu";
 const STATUSES = [
   "NEW", 
   "Attempted to Contact", 
-  "CONTACTED",
+  "EMAIL_SENT",
   "Contact in future",
   "MEETING_BOOKED", 
   "Not Contacted",
@@ -25,7 +25,7 @@ const STATUSES = [
 const STATUS_LABELS: Record<string, string> = {
   "NEW": "NEW",
   "Attempted to Contact": "ATTEMPTED TO CONTACT",
-  "CONTACTED": "CONNECTED",
+  "EMAIL_SENT": "EMAIL SENT",
   "Contact in future": "CONTACT IN FUTURE",
   "MEETING_BOOKED": "MEETING BOOKED",
   "Not Contacted": "NOT CONTACTED",
@@ -102,7 +102,7 @@ export default function KanbanBoard({ initialLeads, onLeadClick }: { initialLead
                 <div className={cn("w-2 h-2 rounded-full", 
                   status === 'NEW' ? 'bg-primary' :
                   status === 'Attempted to Contact' ? 'bg-blue-500' :
-                  status === 'CONTACTED' ? 'bg-indigo-500' :
+                  status === 'EMAIL_SENT' ? 'bg-indigo-500' :
                   status === 'Contact in future' ? 'bg-violet-500' :
                   status === 'MEETING_BOOKED' ? 'bg-emerald-500' :
                   status === 'Not Contacted' ? 'bg-gray-400' :

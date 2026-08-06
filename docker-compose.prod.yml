@@ -15,23 +15,15 @@ services:
   app:
     build:
       context: .
-      target: development
+      target: production
     ports:
       - "3000:3000"
-    # Mount your local code into the container so you get hot-reloading!
-    volumes:
-      - .:/app
-      # Exclude node_modules and .next from being overwritten by the host
-      - /app/node_modules
-      - /app/.next
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       # Tell the app how to connect to the db container
       - DATABASE_URL=postgresql://postgres:password@db:5432/lead_gen_db?schema=public
     depends_on:
       - db
-    # Start the dev server
-    command: npm run dev
 
 volumes:
   postgres_data:

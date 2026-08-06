@@ -16,6 +16,7 @@ export async function POST(request: Request) {
 
  try {
  const data = await request.json();
+ const canAssignUser = hasPermission(session, "ASSIGN_USER");
 
  const lead = await prisma.lead.create({
  data: {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
  phone: data.phone || null,
  email: data.email || null,
  website: data.website || null,
- assignStaffId: data.assignStaffId || null,
+ assignStaffId: canAssignUser ? (data.assignStaffId || null) : (session.user.staffId || null),
  followUpDate: data.followUpDate ? new Date(data.followUpDate) : null,
  status: data.status ||"NEW",
  

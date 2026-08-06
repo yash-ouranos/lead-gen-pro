@@ -2,6 +2,7 @@ export const AVAILABLE_PERMISSIONS = [
   // Leads & Campaigns
   { id: "VIEW_LEADS", label: "View Leads" },
   { id: "MANAGE_LEADS", label: "Manage Leads" },
+  { id: "ASSIGN_USER", label: "Assign User" },
   { id: "VIEW_AI_LEADS", label: "View AI Leads" },
   { id: "MANAGE_AI_LEADS", label: "Manage AI Leads" },
   { id: "RUN_AI_SCRAPING", label: "Run AI Scraping" },
